@@ -10,8 +10,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@solana/web3.js": "^1.95.2",
+    "@types/chrome": "^0.0.270",
+    "bs58": "^6.0.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.1",
+    "zustand": "^4.5.5"
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.0.0-beta.25",

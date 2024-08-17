@@ -18,5 +18,5 @@ body {
   display: flex;
   place-items: center;
   min-width: 400px;
-  min-height: 300vh;
+  min-height: 100vh;
 }
