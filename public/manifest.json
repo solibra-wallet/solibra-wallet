@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "solibra-wallet",
+  "version": "1.0.0",
+  "action": { "default_popup": "popup/index.html" },
+  "content_scripts": [
+    {
+      "matches": ["http://localhost:3000/*"],
+      "run_at": "document_start",
+      "exclude_globs": ["*chrome-extension*"],
+      "js": ["content/content.js"],
+      "all_frames": true
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["content/injected.js", "content/wallet-standard.js"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "permissions": ["storage"]
+}

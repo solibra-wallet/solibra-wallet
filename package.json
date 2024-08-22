@@ -5,13 +5,16 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build --config vite.config.ts && vite build --config vite-content.config.ts",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@solana/wallet-standard-features": "^1.2.0",
     "@solana/web3.js": "^1.95.2",
     "@types/chrome": "^0.0.270",
+    "@wallet-standard/base": "^1.0.1",
+    "@wallet-standard/features": "^1.0.3",
     "bs58": "^6.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

@@ -8,16 +8,18 @@ export default defineConfig({
   build: {
     outDir: "../dist",
     target: "esnext",
+    emptyOutDir: false,
     rollupOptions: {
       input: {
-        popup: "src/popup/index.html",
+        content: "./src/content/content.ts",
+        injected: "./src/content/injected.ts",
+        ["wallet-standard"]: "./src/wallet-standard/initialize.ts",
       },
       output: {
-        entryFileNames: "popup/[name].js",
+        entryFileNames: "content/[name].js",
       },
     },
     sourcemap: false,
     minify: false,
   },
-  publicDir: "../public",
 });
