@@ -10,10 +10,14 @@ export default defineConfig({
     target: "esnext",
     rollupOptions: {
       input: {
-        popup: "src/popup/index.html",
+        ["popup/popup"]: "src/popup/index.html",
+        ["popup/main"]: "src/popup/main.tsx",
+        content: "./src/content/content.ts",
+        injected: "./src/injected/injected.ts",
+        background: "./src/background/background.ts",
       },
       output: {
-        entryFileNames: "popup/[name].js",
+        entryFileNames: "[name].js",
       },
     },
     sourcemap: false,

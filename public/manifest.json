@@ -8,15 +8,21 @@
       "matches": ["http://localhost:3000/*"],
       "run_at": "document_start",
       "exclude_globs": ["*chrome-extension*"],
-      "js": ["content/content.js"],
+      "js": ["content.js"],
       "all_frames": true
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["content/injected.js", "content/wallet-standard.js"],
+      "resources": ["injected.js", "assets/*.js", "assets/*.css"],
       "matches": ["<all_urls>"]
     }
   ],
+  "externally_connectable": {
+    "matches": ["<all_urls>"]
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
   "permissions": ["storage"]
 }

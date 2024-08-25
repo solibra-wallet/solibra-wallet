@@ -11,6 +11,7 @@ import {
   SolanaSignInInput,
   SolanaSignInOutput,
 } from "@solana/wallet-standard-features";
+import { sendMsgToBackground, sendMsgToContentScript } from "./message-utils";
 
 let testKey: any = null;
 (async () => {
@@ -19,13 +20,16 @@ let testKey: any = null;
 
 export class SolibraWallet implements Solibra {
   get publicKey(): PublicKey | null {
-    return null;
+    return testKey?.publicKey ?? null;
   }
   async connect(options?: {
     onlyIfTrusted?: boolean;
   }): Promise<{ publicKey: PublicKey | null }> {
     console.log("SolibraWallet connect");
-    return { publicKey: null };
+    sendMsgToBackground({
+      command: "connect",
+    });
+    return { publicKey: this.publicKey };
   }
   async disconnect(): Promise<void> {
     console.log("SolibraWallet disconnect");
