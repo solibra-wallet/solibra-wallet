@@ -13,22 +13,24 @@ import {
 } from "@solana/wallet-standard-features";
 import { sendMsgToBackground, sendMsgToContentScript } from "./message-utils";
 
-let testKey: any = null;
-(async () => {
-  testKey = await Keypair.generate();
-})();
-
 export class SolibraWallet implements Solibra {
+  #publicKey: PublicKey | null = null;
+
   get publicKey(): PublicKey | null {
-    return testKey?.publicKey ?? null;
+    return this.#publicKey;
   }
+
   async connect(options?: {
     onlyIfTrusted?: boolean;
   }): Promise<{ publicKey: PublicKey | null }> {
     console.log("SolibraWallet connect");
-    sendMsgToBackground({
+    const res = await sendMsgToBackground({
       command: "connect",
     });
+    if (res.publicKey) {
+      this.#publicKey = new PublicKey(res.publicKey);
+    }
+
     return { publicKey: this.publicKey };
   }
   async disconnect(): Promise<void> {

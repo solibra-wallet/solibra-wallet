@@ -1,6 +1,5 @@
-import { useKeysStore } from '../store/keysStore';
-import { generateNewKeyRecord } from '../store/keyRecord';
-
+import { useKeysStore } from "../../store/keysStore.ts";
+import { generateNewKeyRecord } from "../../store/keyRecord";
 
 function KeyStorePage() {
   const password = useKeysStore((state) => state.password);
@@ -11,7 +10,7 @@ function KeyStorePage() {
   const removeKey = useKeysStore((state) => state.removeKey);
 
   return (
-    <div style={{ width: 400, wordWrap: 'break-word' }}>
+    <div style={{ width: 400, wordWrap: "break-word" }}>
       <h1>Key store</h1>
       <div>
         Keys:
@@ -24,22 +23,20 @@ function KeyStorePage() {
           ))}
         </ul>
       </div>
-      <div>
-        keyIndex: {keyIndex}
-      </div>
-      <div>
-        currentKey: {JSON.stringify(currentKey)}
-      </div>
+      <div>keyIndex: {keyIndex}</div>
+      <div>currentKey: {JSON.stringify(currentKey)}</div>
       <div className="card">
-        <button onClick={async () => password && addKey(await generateNewKeyRecord(password))}>
+        <button
+          onClick={async () =>
+            password && addKey(await generateNewKeyRecord(password))
+          }
+        >
           Add key
         </button>
-        <button onClick={() => removeKey(0)}>
-          Remove key
-        </button>
+        <button onClick={() => removeKey(0)}>Remove key</button>
       </div>
     </div>
-  )
+  );
 }
 
-export default KeyStorePage
+export default KeyStorePage;
