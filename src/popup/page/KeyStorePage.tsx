@@ -8,15 +8,24 @@ function KeyStorePage() {
   const currentKey = useKeysStore((state) => state.currentKey);
   const addKey = useKeysStore((state) => state.addKey);
   const removeKey = useKeysStore((state) => state.removeKey);
+  const selectKey = useKeysStore((state) => state.selectKey);
 
   return (
-    <div style={{ width: 400, wordWrap: "break-word" }}>
+    <div style={{ width: 600, wordWrap: "break-word" }}>
       <h1>Key store</h1>
       <div>
         Keys:
         <ul>
           {keys.map((key, i) => (
             <div key={i}>
+              {keyIndex === i ? "*" : ""}{" "}
+              <button
+                onClick={(e) => {
+                  selectKey(i);
+                }}
+              >
+                Select
+              </button>
               {key.name}: {key.publicKey}
               <br />
             </div>

@@ -8,10 +8,10 @@ export default defineConfig({
   build: {
     outDir: "../dist",
     target: "esnext",
+    emptyOutDir: false,
     rollupOptions: {
       input: {
-        ["popup/popup"]: "src/popup/index.html",
-        ["popup/main"]: "src/popup/main.tsx",
+        content: "./src/content/content.ts",
       },
       output: {
         entryFileNames: "[name].js",

@@ -11,10 +11,17 @@ import {
   SolanaSignInInput,
   SolanaSignInOutput,
 } from "@solana/wallet-standard-features";
-import { sendMsgToBackground, sendMsgToContentScript } from "./message-utils";
+import { sendMsgToBackground, sendMsgToContentScript } from "./messageUtils";
+import {
+  ConnectRequestCommand,
+  ConnectRequestCommandFactory,
+} from "../command/connectRequestCommand";
+import { CommandSource } from "../command/baseCommand";
+import { EventEmitter } from "eventemitter3";
 
-export class SolibraWallet implements Solibra {
+export class SolibraImpl implements Solibra {
   #publicKey: PublicKey | null = null;
+  #eventEmitter = new EventEmitter();
 
   get publicKey(): PublicKey | null {
     return this.#publicKey;
@@ -24,9 +31,9 @@ export class SolibraWallet implements Solibra {
     onlyIfTrusted?: boolean;
   }): Promise<{ publicKey: PublicKey | null }> {
     console.log("SolibraWallet connect");
-    const res = await sendMsgToBackground({
-      command: "connect",
-    });
+    const res = await sendMsgToBackground(
+      ConnectRequestCommandFactory.buildNew(CommandSource.INJECT_SCRIPT)
+    );
     if (res.publicKey) {
       this.#publicKey = new PublicKey(res.publicKey);
     }
@@ -70,6 +77,7 @@ export class SolibraWallet implements Solibra {
     context?: any
   ): void {
     console.log("SolibraWallet on", event);
+    this.#eventEmitter.on(event, listener);
   }
   off<E extends keyof SolibraEvent>(
     event: E,
@@ -77,5 +85,10 @@ export class SolibraWallet implements Solibra {
     context?: any
   ): void {
     console.log("SolibraWallet off", event);
+    this.#eventEmitter.off(event, listener);
+  }
+  async reloadAccount() {
+    await this.connect();
+    this.#eventEmitter.emit("accountChanged");
   }
 }

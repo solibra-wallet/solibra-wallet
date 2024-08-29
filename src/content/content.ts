@@ -1,6 +1,55 @@
-import { registerMessageListeners } from "./message-utils";
+import { CommandSource } from "../command/baseCommand";
+import { ChangedAccountCommandFactory } from "../command/changedAccountCommand";
+import { ForwardToInjectScriptCommandFactory } from "../command/forwardToInjectScriptCommand";
+import { sendMsgToInjectScript } from "./messageUtils";
 
-registerMessageListeners();
+function registerMessageListeners() {
+  // declare message listener from background or popup script
+  chrome.runtime.onMessage.addListener(
+    async (request, sender, sendResponse) => {
+      console.log(
+        "[message] content script received message from background or popup script",
+        request,
+        sender
+      );
+      sendResponse({ response: "pong from content script" });
+
+      let currentCommand = request;
+
+      if (ForwardToInjectScriptCommandFactory.isCommand(currentCommand)) {
+        console.log(
+          "[message] content script received forward to inject script command",
+          currentCommand
+        );
+        const command =
+          ForwardToInjectScriptCommandFactory.tryFrom(currentCommand);
+        if (command && command.forwardCommand) {
+          await sendMsgToInjectScript(command.forwardCommand);
+
+          // content-script also should unwrap to handle
+          if (command.receivers.includes(CommandSource.CONTENT_SCRIPT)) {
+            currentCommand = command.forwardCommand;
+          } else {
+            return; // quit
+          }
+        }
+      }
+    }
+  );
+
+  // declare message listener from inject script
+  window.addEventListener("message", (event) => {
+    if (
+      event.source === window &&
+      event.data.from === CommandSource.INJECT_SCRIPT
+    ) {
+      console.log(
+        "[message] content script received message from inject",
+        event
+      );
+    }
+  });
+}
 
 function injectScript(scriptName: string) {
   try {
@@ -22,4 +71,5 @@ function injectScript(scriptName: string) {
   }
 }
 
-injectScript("injected.js");
+registerMessageListeners();
+injectScript("inject.js");

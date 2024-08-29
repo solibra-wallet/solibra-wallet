@@ -3,7 +3,10 @@ import { create, useStore } from "zustand";
 import { persist, createJSONStorage, StateStorage } from "zustand/middleware";
 import { KeyRecord } from "./keyRecord";
 import { StateCreator } from "zustand";
-import { sendMsgToBackground } from "../content/message-utils";
+import { sendMsgToBackground } from "../content/messageUtils";
+import { RefreshKeysStoreCommandFactory } from "../command/refreshKeysStoreCommand";
+import { CommandSource } from "../command/baseCommand";
+import { sendMsgToContentScript } from "../background/messageUtils";
 
 // Custom storage object
 const asyncLocalStorage: StateStorage = {
@@ -37,6 +40,19 @@ type KeysStoreActionsType = {
 
 type KeysStoreType = KeysStoreDataType & KeysStoreActionsType;
 
+const propogateReloadStore = () => {
+  console.log("[store] propogate reload store", envStore.getState().env);
+  if (envStore.getState().env === "POPUP_SCRIPT") {
+    sendMsgToBackground(
+      RefreshKeysStoreCommandFactory.buildNew(CommandSource.POPUP_SCRIPT)
+    );
+  } else if (envStore.getState().env === "BACKGROUND") {
+    sendMsgToContentScript(
+      RefreshKeysStoreCommandFactory.buildNew(CommandSource.BACKGROUND)
+    );
+  }
+};
+
 const baseKeysStore: StateCreator<
   KeysStoreType,
   [],
@@ -55,30 +71,25 @@ const baseKeysStore: StateCreator<
       const currentKey = get().currentKey ?? keys[0];
       set({ keys, currentKey });
 
-      // sendMsgToBackground({
-      //   command: "refreshKeysStore",
-      // });
+      propogateReloadStore();
     },
     removeKey: (i: number) => {
       const keys = get().keys.filter((_, index) => index !== i);
       const keyIndex = get().keyIndex > keys.length - 1 ? 0 : get().keyIndex;
       const currentKey = keys[keyIndex] ?? null;
       set({ keys, keyIndex, currentKey });
-      // sendMsgToBackground({
-      //   command: "refreshKeysStore",
-      // });
+
+      propogateReloadStore();
     },
     selectKey: (i: number) => {
       let currentKey = get().keys[i];
       if (currentKey) {
         set({ keyIndex: i, currentKey });
-        return;
+      } else {
+        currentKey = get().keys[0] ?? null;
+        set({ keyIndex: 0, currentKey });
       }
-      currentKey = get().keys[0] ?? null;
-      set({ keyIndex: 0, currentKey });
-      // sendMsgToBackground({
-      //   command: "refreshKeysStore",
-      // });
+      propogateReloadStore();
     },
   }),
   {
@@ -86,6 +97,14 @@ const baseKeysStore: StateCreator<
     storage: createJSONStorage(() => asyncLocalStorage),
   }
 );
+
+export const envStore = createStore<{
+  env: string;
+  setEnv: (env: string) => void;
+}>()((set, get) => ({
+  env: "default",
+  setEnv: (env: string) => set({ env }),
+}));
 
 export const vanillaKeysStore = createStore<KeysStoreType>()(baseKeysStore);
 

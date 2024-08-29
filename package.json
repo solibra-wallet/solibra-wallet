@@ -5,25 +5,25 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build --config vite.config.ts",
+    "build": "tsc -b && vite build --config vite.config.ts && vite build --config vite-content.config.ts && vite build --config vite-inject.config.ts && vite build --config vite-background.config.ts",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
     "@solana/wallet-standard-features": "^1.2.0",
     "@solana/web3.js": "^1.95.2",
-    "@types/chrome": "^0.0.270",
     "@wallet-standard/base": "^1.0.1",
     "@wallet-standard/features": "^1.0.3",
     "bs58": "^6.0.0",
+    "eventemitter3": "^5.0.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.1",
     "zustand": "^4.5.5"
   },
   "devDependencies": {
-    "@crxjs/vite-plugin": "^2.0.0-beta.25",
     "@eslint/js": "^9.9.0",
+    "@types/chrome": "^0.0.270",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",

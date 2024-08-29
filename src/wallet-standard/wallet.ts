@@ -166,7 +166,7 @@ export class SolibraWallet implements Wallet {
 
   #connected = () => {
     const address = this.#solibra.publicKey?.toBase58();
-    console.log("connected", address);
+    console.log("wallet connected", address);
     if (address) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const publicKey = this.#solibra.publicKey!.toBytes();
@@ -184,6 +184,7 @@ export class SolibraWallet implements Wallet {
   };
 
   #disconnected = () => {
+    console.log("wallet disconnected");
     if (this.#account) {
       this.#account = null;
       this.#emit("change", { accounts: this.accounts });
@@ -191,6 +192,7 @@ export class SolibraWallet implements Wallet {
   };
 
   #reconnected = () => {
+    console.log("wallet reconnected");
     if (this.#solibra.publicKey) {
       this.#connected();
     } else {
@@ -199,6 +201,7 @@ export class SolibraWallet implements Wallet {
   };
 
   #connect: StandardConnectMethod = async ({ silent } = {}) => {
+    console.log("wallet connect");
     if (!this.#account) {
       await this.#solibra.connect(silent ? { onlyIfTrusted: true } : undefined);
     }
@@ -209,6 +212,7 @@ export class SolibraWallet implements Wallet {
   };
 
   #disconnect: StandardDisconnectMethod = async () => {
+    console.log("wallet disconnect");
     await this.#solibra.disconnect();
   };
 
