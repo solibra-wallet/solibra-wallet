@@ -51,7 +51,7 @@ export type SolibraFeature = {
   };
 };
 
-export class SolibraWallet implements Wallet {
+export class SolibraStandardWallet implements Wallet {
   readonly #listeners: {
     [E in StandardEventsNames]?: StandardEventsListeners[E][];
   } = {};
@@ -127,7 +127,7 @@ export class SolibraWallet implements Wallet {
   }
 
   constructor(solibra: Solibra) {
-    if (new.target === SolibraWallet) {
+    if (new.target === SolibraStandardWallet) {
       Object.freeze(this);
     }
 

@@ -1,19 +1,19 @@
 import { BaseCommandType, CommandSource } from "./baseCommand";
 
 const commandMeta = {
-  command: "changedAccount",
-  uuid: "4f3ecff0-587e-4320-9a12-a1dc028168cc",
+  command: "connectResponse",
+  uuid: "a5251654-29ec-48e5-8675-d649ab71a817",
 };
 
-export type ChangedAccountCommandType = BaseCommandType & {
+export type ConnectResponseCommandType = BaseCommandType & {
   command: typeof commandMeta.command;
   uuid: typeof commandMeta.uuid;
   from: CommandSource;
-  publicKey: string | null;
+  publicKey: string;
   [key: string]: any;
 };
 
-export class ChangedAccountCommandFactory {
+export class ConnectResponseCommandFactory {
   static isCommand(payload: any): boolean {
     return (
       payload?.command === commandMeta.command &&
@@ -21,9 +21,9 @@ export class ChangedAccountCommandFactory {
     );
   }
 
-  static tryFrom(payload: any): ChangedAccountCommandType | null {
-    if (ChangedAccountCommandFactory.isCommand(payload)) {
-      return payload as ChangedAccountCommandType;
+  static tryFrom(payload: any): ConnectResponseCommandType | null {
+    if (ConnectResponseCommandFactory.isCommand(payload)) {
+      return payload as ConnectResponseCommandType;
     }
     return null;
   }
@@ -33,8 +33,8 @@ export class ChangedAccountCommandFactory {
     publicKey,
   }: {
     from: CommandSource;
-    publicKey: string | null;
-  }): ChangedAccountCommandType {
+    publicKey: string;
+  }): ConnectResponseCommandType {
     return { ...commandMeta, from, publicKey };
   }
 }

@@ -1,11 +1,11 @@
 import { BaseCommandType, CommandSource } from "./baseCommand";
 
 const commandMeta = {
-  command: "forwardToInjectScript",
-  uuid: "81941a7d-a0cf-4377-a420-446b729b6b4e",
+  command: "forwardToBackground",
+  uuid: "5847d480-a1fc-4e63-9240-6077df8b73c6",
 };
 
-export type ForwardToInjectScriptCommandType = BaseCommandType & {
+export type ForwardToBackgroundCommandType = BaseCommandType & {
   command: typeof commandMeta.command;
   uuid: typeof commandMeta.uuid;
   from: CommandSource;
@@ -14,7 +14,7 @@ export type ForwardToInjectScriptCommandType = BaseCommandType & {
   [key: string]: any;
 };
 
-export class ForwardToInjectScriptCommandFactory {
+export class ForwardToBackgroundCommandTypeFactory {
   static isCommand(payload: any): boolean {
     return (
       payload?.command === commandMeta.command &&
@@ -22,9 +22,9 @@ export class ForwardToInjectScriptCommandFactory {
     );
   }
 
-  static tryFrom(payload: any): ForwardToInjectScriptCommandType | null {
-    if (ForwardToInjectScriptCommandFactory.isCommand(payload)) {
-      return payload as ForwardToInjectScriptCommandType;
+  static tryFrom(payload: any): ForwardToBackgroundCommandType | null {
+    if (ForwardToBackgroundCommandTypeFactory.isCommand(payload)) {
+      return payload as ForwardToBackgroundCommandType;
     }
     return null;
   }
@@ -37,7 +37,7 @@ export class ForwardToInjectScriptCommandFactory {
     from: CommandSource;
     receivers: CommandSource[];
     forwardCommand: BaseCommandType;
-  }): ForwardToInjectScriptCommandType {
+  }): ForwardToBackgroundCommandType {
     return { ...commandMeta, from, receivers, forwardCommand };
   }
 }

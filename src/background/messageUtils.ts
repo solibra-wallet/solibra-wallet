@@ -1,4 +1,4 @@
-import { BaseCommand, CommandSource } from "../command/baseCommand";
+import { BaseCommandType, CommandSource } from "../command/baseCommand";
 
 async function getActiveTab() {
   const [tab] = await chrome.tabs.query({
@@ -8,7 +8,9 @@ async function getActiveTab() {
   return tab;
 }
 
-export async function sendMsgToContentScript(msg: BaseCommand): Promise<any> {
+export async function sendMsgToContentScript(
+  msg: BaseCommandType
+): Promise<any> {
   console.log("[message] send message from background to content script");
   const tab = await getActiveTab();
   if (tab.id) {

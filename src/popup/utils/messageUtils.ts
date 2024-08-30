@@ -1,4 +1,4 @@
-import { BaseCommand, CommandSource } from "../../command/baseCommand";
+import { BaseCommandType, CommandSource } from "../../command/baseCommand";
 
 async function getActiveTab() {
   const [tab] = await chrome.tabs.query({
@@ -9,7 +9,7 @@ async function getActiveTab() {
 }
 
 // send msg: popup script -> background
-async function sendMsgToBackground(msg: BaseCommand) {
+async function sendMsgToBackground(msg: BaseCommandType) {
   console.log("[message] send message from popup script to background");
   const ret = await chrome.runtime.sendMessage({
     ...msg,
@@ -19,7 +19,7 @@ async function sendMsgToBackground(msg: BaseCommand) {
 }
 
 // send msg: popup script -> content script
-async function sendMsgToContentScript(msg: BaseCommand) {
+async function sendMsgToContentScript(msg: BaseCommandType) {
   console.log("[message] send message from popup script to content script");
   const tab = await getActiveTab();
   if (!tab.id) {

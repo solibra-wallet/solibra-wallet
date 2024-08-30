@@ -7,6 +7,7 @@ import { sendMsgToBackground } from "../content/messageUtils";
 import { RefreshKeysStoreCommandFactory } from "../command/refreshKeysStoreCommand";
 import { CommandSource } from "../command/baseCommand";
 import { sendMsgToContentScript } from "../background/messageUtils";
+import { envStore } from "./envStore";
 
 // Custom storage object
 const asyncLocalStorage: StateStorage = {
@@ -40,15 +41,19 @@ type KeysStoreActionsType = {
 
 type KeysStoreType = KeysStoreDataType & KeysStoreActionsType;
 
-const propogateReloadStore = () => {
+const syncStoreAcrossRuntime = () => {
   console.log("[store] propogate reload store", envStore.getState().env);
   if (envStore.getState().env === "POPUP_SCRIPT") {
     sendMsgToBackground(
-      RefreshKeysStoreCommandFactory.buildNew(CommandSource.POPUP_SCRIPT)
+      RefreshKeysStoreCommandFactory.buildNew({
+        from: CommandSource.POPUP_SCRIPT,
+      })
     );
   } else if (envStore.getState().env === "BACKGROUND") {
     sendMsgToContentScript(
-      RefreshKeysStoreCommandFactory.buildNew(CommandSource.BACKGROUND)
+      RefreshKeysStoreCommandFactory.buildNew({
+        from: CommandSource.BACKGROUND,
+      })
     );
   }
 };
@@ -71,7 +76,7 @@ const baseKeysStore: StateCreator<
       const currentKey = get().currentKey ?? keys[0];
       set({ keys, currentKey });
 
-      propogateReloadStore();
+      syncStoreAcrossRuntime();
     },
     removeKey: (i: number) => {
       const keys = get().keys.filter((_, index) => index !== i);
@@ -79,7 +84,7 @@ const baseKeysStore: StateCreator<
       const currentKey = keys[keyIndex] ?? null;
       set({ keys, keyIndex, currentKey });
 
-      propogateReloadStore();
+      syncStoreAcrossRuntime();
     },
     selectKey: (i: number) => {
       let currentKey = get().keys[i];
@@ -89,7 +94,7 @@ const baseKeysStore: StateCreator<
         currentKey = get().keys[0] ?? null;
         set({ keyIndex: 0, currentKey });
       }
-      propogateReloadStore();
+      syncStoreAcrossRuntime();
     },
   }),
   {
@@ -97,14 +102,6 @@ const baseKeysStore: StateCreator<
     storage: createJSONStorage(() => asyncLocalStorage),
   }
 );
-
-export const envStore = createStore<{
-  env: string;
-  setEnv: (env: string) => void;
-}>()((set, get) => ({
-  env: "default",
-  setEnv: (env: string) => set({ env }),
-}));
 
 export const vanillaKeysStore = createStore<KeysStoreType>()(baseKeysStore);
 

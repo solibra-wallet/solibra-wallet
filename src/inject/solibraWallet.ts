@@ -11,15 +11,13 @@ import {
   SolanaSignInInput,
   SolanaSignInOutput,
 } from "@solana/wallet-standard-features";
-import { sendMsgToBackground, sendMsgToContentScript } from "./messageUtils";
-import {
-  ConnectRequestCommand,
-  ConnectRequestCommandFactory,
-} from "../command/connectRequestCommand";
+import { sendMsgToContentScript } from "./messageUtils";
+import { ConnectRequestCommandFactory } from "../command/connectRequestCommand";
 import { CommandSource } from "../command/baseCommand";
 import { EventEmitter } from "eventemitter3";
+import { ForwardToBackgroundCommandTypeFactory } from "../command/forwardToBackgroundCommand";
 
-export class SolibraImpl implements Solibra {
+export class SolibraWallet implements Solibra {
   #publicKey: PublicKey | null = null;
   #eventEmitter = new EventEmitter();
 
@@ -31,19 +29,37 @@ export class SolibraImpl implements Solibra {
     onlyIfTrusted?: boolean;
   }): Promise<{ publicKey: PublicKey | null }> {
     console.log("SolibraWallet connect");
-    const res = await sendMsgToBackground(
-      ConnectRequestCommandFactory.buildNew(CommandSource.INJECT_SCRIPT)
+
+    sendMsgToContentScript(
+      ConnectRequestCommandFactory.buildNew({
+        from: CommandSource.INJECT_SCRIPT,
+      })
     );
-    if (res.publicKey) {
-      this.#publicKey = new PublicKey(res.publicKey);
+
+    // const res = await sendMsgToBackground(
+    //   ConnectRequestCommandFactory.buildNew({
+    //     from: CommandSource.INJECT_SCRIPT,
+    //   })
+    // );
+    // if (res.publicKey) {
+    //   this.#publicKey = new PublicKey(res.publicKey);
+    // }
+    for (let i = 0; i < 10000; i++) {
+      if (!this.publicKey) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      } else {
+        break;
+      }
     }
 
     return { publicKey: this.publicKey };
   }
+
   async disconnect(): Promise<void> {
     console.log("SolibraWallet disconnect");
     // throw new Error("Method not implemented.");
   }
+
   signAndSendTransaction<T extends Transaction | VersionedTransaction>(
     transaction: T,
     options?: SendOptions
@@ -51,26 +67,31 @@ export class SolibraImpl implements Solibra {
     console.log("SolibraWallet sign and send transaction");
     throw new Error("Method not implemented.");
   }
+
   signTransaction<T extends Transaction | VersionedTransaction>(
     transaction: T
   ): Promise<T> {
     console.log("SolibraWallet sign transaction");
     throw new Error("Method not implemented.");
   }
+
   signAllTransactions<T extends Transaction | VersionedTransaction>(
     transactions: T[]
   ): Promise<T[]> {
     console.log("SolibraWallet sign all transactions");
     throw new Error("Method not implemented.");
   }
+
   signMessage(message: Uint8Array): Promise<{ signature: Uint8Array }> {
     console.log("SolibraWallet sign message");
     throw new Error("Method not implemented.");
   }
+
   signIn(input?: SolanaSignInInput): Promise<SolanaSignInOutput> {
     console.log("SolibraWallet sign in");
     throw new Error("Method not implemented.");
   }
+
   on<E extends keyof SolibraEvent>(
     event: E,
     listener: SolibraEvent[E],
@@ -79,6 +100,7 @@ export class SolibraImpl implements Solibra {
     console.log("SolibraWallet on", event);
     this.#eventEmitter.on(event, listener);
   }
+
   off<E extends keyof SolibraEvent>(
     event: E,
     listener: SolibraEvent[E],
@@ -87,8 +109,12 @@ export class SolibraImpl implements Solibra {
     console.log("SolibraWallet off", event);
     this.#eventEmitter.off(event, listener);
   }
+
   async reloadAccount() {
-    await this.connect();
     this.#eventEmitter.emit("accountChanged");
+  }
+
+  async setPublicKey(publicKey: PublicKey | null) {
+    this.#publicKey = publicKey;
   }
 }

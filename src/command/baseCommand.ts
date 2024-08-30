@@ -6,7 +6,7 @@ export const enum CommandSource {
   UNKNOWN = "UNKNOWN",
 }
 
-export type BaseCommand = {
+export type BaseCommandType = {
   command: string;
   uuid: string;
   from: CommandSource;

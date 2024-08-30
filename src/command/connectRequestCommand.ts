@@ -1,11 +1,11 @@
-import { BaseCommand, CommandSource } from "./baseCommand";
+import { BaseCommandType, CommandSource } from "./baseCommand";
 
 const commandMeta = {
   command: "connectRequest",
   uuid: "de2f7373-3996-496e-82bf-804aacc28d51",
 };
 
-export type ConnectRequestCommand = BaseCommand & {
+export type ConnectRequestCommandType = BaseCommandType & {
   command: typeof commandMeta.command;
   uuid: typeof commandMeta.uuid;
   from: CommandSource;
@@ -20,14 +20,18 @@ export class ConnectRequestCommandFactory {
     );
   }
 
-  static tryFrom(payload: any): ConnectRequestCommand | null {
+  static tryFrom(payload: any): ConnectRequestCommandType | null {
     if (ConnectRequestCommandFactory.isCommand(payload)) {
-      return payload as ConnectRequestCommand;
+      return payload as ConnectRequestCommandType;
     }
     return null;
   }
 
-  static buildNew(from: CommandSource): ConnectRequestCommand {
+  static buildNew({
+    from,
+  }: {
+    from: CommandSource;
+  }): ConnectRequestCommandType {
     return { ...commandMeta, from };
   }
 }

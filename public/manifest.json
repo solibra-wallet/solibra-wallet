@@ -3,6 +3,10 @@
   "name": "solibra-wallet",
   "version": "1.0.0",
   "action": { "default_popup": "popup/index.html" },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
@@ -18,12 +22,5 @@
       "matches": ["<all_urls>"]
     }
   ],
-  "externally_connectable": {
-    "matches": ["<all_urls>"]
-  },
-  "background": {
-    "service_worker": "background.js",
-    "type": "module"
-  },
   "permissions": ["storage"]
 }

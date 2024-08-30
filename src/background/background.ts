@@ -3,7 +3,8 @@ import { ChangedAccountCommandFactory } from "../command/changedAccountCommand";
 import { ConnectRequestCommandFactory } from "../command/connectRequestCommand";
 import { ForwardToInjectScriptCommandFactory } from "../command/forwardToInjectScriptCommand";
 import { RefreshKeysStoreCommandFactory } from "../command/refreshKeysStoreCommand";
-import { envStore, vanillaKeysStore } from "../store/keysStore";
+import { envStore } from "../store/envStore";
+import { vanillaKeysStore } from "../store/keysStore";
 import { sendMsgToContentScript } from "./messageUtils";
 
 envStore.getState().setEnv("BACKGROUND");
@@ -18,19 +19,41 @@ function registerMessageListeners() {
           request
         );
 
+        if (ConnectRequestCommandFactory.isCommand(request)) {
+          // chrome.action.openPopup();
+          sendResponse({
+            publicKey: vanillaKeysStore.getState().currentKey?.publicKey,
+          });
+          return;
+        }
+
         sendResponse({ response: "pong from background" });
       } else {
         if (RefreshKeysStoreCommandFactory.isCommand(request)) {
           console.log("[message] rehydrate keys store");
+          const oldCurrentKey =
+            vanillaKeysStore.getState().currentKey?.publicKey;
           await vanillaKeysStore.persist.rehydrate();
           sendResponse({});
-          await sendMsgToContentScript(
-            ForwardToInjectScriptCommandFactory.buildNew(
-              CommandSource.BACKGROUND,
-              [CommandSource.CONTENT_SCRIPT, CommandSource.INJECT_SCRIPT],
-              ChangedAccountCommandFactory.buildNew(CommandSource.BACKGROUND)
-            )
-          );
+          const newCurrentKey =
+            vanillaKeysStore.getState().currentKey?.publicKey;
+
+          if (oldCurrentKey !== newCurrentKey) {
+            // update to UI (inject script) to notify wallet account changed
+            await sendMsgToContentScript(
+              ForwardToInjectScriptCommandFactory.buildNew({
+                from: CommandSource.BACKGROUND,
+                receivers: [
+                  CommandSource.CONTENT_SCRIPT,
+                  CommandSource.INJECT_SCRIPT,
+                ],
+                forwardCommand: ChangedAccountCommandFactory.buildNew({
+                  from: CommandSource.BACKGROUND,
+                  publicKey: newCurrentKey ?? null,
+                }),
+              })
+            );
+          }
           return;
         }
 
@@ -47,13 +70,13 @@ function registerMessageListeners() {
         "[message] receive from other extension or inject script",
         request
       );
-      if (ConnectRequestCommandFactory.isCommand(request)) {
-        // chrome.action.openPopup();
-        sendResponse({
-          publicKey: vanillaKeysStore.getState().currentKey?.publicKey,
-        });
-        return;
-      }
+      // if (ConnectRequestCommandFactory.isCommand(request)) {
+      //   // chrome.action.openPopup();
+      //   sendResponse({
+      //     publicKey: vanillaKeysStore.getState().currentKey?.publicKey,
+      //   });
+      //   return;
+      // }
 
       sendResponse({ response: "pong from background" });
     }

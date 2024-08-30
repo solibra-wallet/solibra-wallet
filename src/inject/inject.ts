@@ -1,14 +1,19 @@
+import { PublicKey } from "@solana/web3.js";
 import { CommandSource } from "../command/baseCommand";
 import { ChangedAccountCommandFactory } from "../command/changedAccountCommand";
+import {
+  ConnectResponseCommandFactory,
+  ConnectResponseCommandType,
+} from "../command/connectResponseCommand";
 import { initialize } from "../wallet-standard/initialize";
-import { SolibraWallet } from "../wallet-standard/wallet";
-import { SolibraImpl } from "./solibraImpl";
+import { SolibraStandardWallet } from "../wallet-standard/wallet";
+import { SolibraWallet } from "./solibraWallet";
 
 console.log("inject script loaded");
 
-const solibraImpl = new SolibraImpl();
-const solibraWallet = new SolibraWallet(solibraImpl);
-initialize(solibraWallet);
+const solibraWallet = new SolibraWallet();
+const solibraStandardWallet = new SolibraStandardWallet(solibraWallet);
+initialize(solibraStandardWallet);
 
 function registerMessageListeners() {
   // declare message listener from content script
@@ -27,7 +32,26 @@ function registerMessageListeners() {
           "[message] inject script received changed account command",
           event.data
         );
-        solibraImpl.reloadAccount();
+        const command = ChangedAccountCommandFactory.tryFrom(event.data);
+        if (!command) {
+          return;
+        }
+        solibraWallet.setPublicKey(
+          command.publicKey ? new PublicKey(command.publicKey) : null
+        );
+        solibraWallet.reloadAccount();
+        return;
+      }
+
+      if (ConnectResponseCommandFactory.isCommand(event.data)) {
+        console.log(
+          "[message] inject script received connect response command",
+          event.data
+        );
+        solibraWallet.setPublicKey(
+          new PublicKey((event.data as ConnectResponseCommandType).publicKey)
+        );
+        return;
       }
     }
   });
