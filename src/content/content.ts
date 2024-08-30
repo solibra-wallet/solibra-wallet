@@ -19,6 +19,7 @@ function registerMessageListeners() {
 
       let currentCommand = request;
 
+      // handle forward to inject script command
       if (ForwardToInjectScriptCommandFactory.isCommand(currentCommand)) {
         console.log(
           "[message] content script received forward to inject script command",
@@ -53,6 +54,7 @@ function registerMessageListeners() {
 
       let currentCommand = event.data;
 
+      // handle forward to background command
       if (ForwardToBackgroundCommandTypeFactory.isCommand(currentCommand)) {
         console.log(
           "[message] content script received forward to background command",
@@ -73,11 +75,17 @@ function registerMessageListeners() {
       }
 
       if (ConnectRequestCommandFactory.isCommand(currentCommand)) {
+        console.log(
+          "[message] content script received connect request command",
+          currentCommand
+        );
+        // ask background for request connect, and get back result
         const ret = await sendMsgToBackground(
           ConnectRequestCommandFactory.buildNew({
             from: CommandSource.CONTENT_SCRIPT,
           })
         );
+        // notify inject script to update public key
         await sendMsgToInjectScript(
           ConnectResponseCommandFactory.buildNew({
             from: CommandSource.CONTENT_SCRIPT,

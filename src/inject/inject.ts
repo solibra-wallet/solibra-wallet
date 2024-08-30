@@ -27,6 +27,19 @@ function registerMessageListeners() {
         event.data
       );
 
+      // handle connect response command
+      if (ConnectResponseCommandFactory.isCommand(event.data)) {
+        console.log(
+          "[message] inject script received connect response command",
+          event.data
+        );
+        solibraWallet.setPublicKey(
+          new PublicKey((event.data as ConnectResponseCommandType).publicKey)
+        );
+        return;
+      }
+
+      // handle changed account command
       if (ChangedAccountCommandFactory.isCommand(event.data)) {
         console.log(
           "[message] inject script received changed account command",
@@ -36,21 +49,12 @@ function registerMessageListeners() {
         if (!command) {
           return;
         }
+
+        // update wallet account & reload
         solibraWallet.setPublicKey(
           command.publicKey ? new PublicKey(command.publicKey) : null
         );
         solibraWallet.reloadAccount();
-        return;
-      }
-
-      if (ConnectResponseCommandFactory.isCommand(event.data)) {
-        console.log(
-          "[message] inject script received connect response command",
-          event.data
-        );
-        solibraWallet.setPublicKey(
-          new PublicKey((event.data as ConnectResponseCommandType).publicKey)
-        );
         return;
       }
     }

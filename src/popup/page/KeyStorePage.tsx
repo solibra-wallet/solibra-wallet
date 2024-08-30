@@ -1,5 +1,11 @@
 import { useKeysStore } from "../../store/keysStore.ts";
-import { generateNewKeyRecord } from "../../store/keyRecord";
+import {
+  generateNewKeypair,
+  generateNewKeyRecord,
+  generateNewViewOnlyKeyRecord,
+} from "../../store/keyRecord";
+import { useHref } from "react-router-dom";
+import { useRef } from "react";
 
 function KeyStorePage() {
   const password = useKeysStore((state) => state.password);
@@ -10,23 +16,49 @@ function KeyStorePage() {
   const removeKey = useKeysStore((state) => state.removeKey);
   const selectKey = useKeysStore((state) => state.selectKey);
 
+  const viewOnlyWalletInputRef = useRef<HTMLInputElement>(null);
+
   return (
     <div style={{ width: 600, wordWrap: "break-word" }}>
       <h1>Key store</h1>
+      <div className="card">
+        <button
+          onClick={async () =>
+            password &&
+            addKey(
+              await generateNewKeyRecord(await generateNewKeypair(), password)
+            )
+          }
+        >
+          Generate new wallet
+        </button>
+      </div>
+      <hr />
+      <div className="card">
+        <input type="text" width={300} ref={viewOnlyWalletInputRef} />
+        <button
+          onClick={async () => {
+            const viewOnlyWalletPublicKey =
+              viewOnlyWalletInputRef?.current?.value;
+            if (!viewOnlyWalletPublicKey) {
+              return;
+            }
+            addKey(await generateNewViewOnlyKeyRecord(viewOnlyWalletPublicKey));
+          }}
+        >
+          Add view only wallet
+        </button>
+      </div>
+      <hr />
       <div>
         Keys:
         <ul>
           {keys.map((key, i) => (
             <div key={i}>
               {keyIndex === i ? "*" : ""}{" "}
-              <button
-                onClick={(e) => {
-                  selectKey(i);
-                }}
-              >
-                Select
-              </button>
+              <button onClick={() => selectKey(i)}>Select</button>
               {key.name}: {key.publicKey}
+              <button onClick={() => removeKey(i)}>Remove key</button>
               <br />
             </div>
           ))}
@@ -34,16 +66,6 @@ function KeyStorePage() {
       </div>
       <div>keyIndex: {keyIndex}</div>
       <div>currentKey: {JSON.stringify(currentKey)}</div>
-      <div className="card">
-        <button
-          onClick={async () =>
-            password && addKey(await generateNewKeyRecord(password))
-          }
-        >
-          Add key
-        </button>
-        <button onClick={() => removeKey(0)}>Remove key</button>
-      </div>
     </div>
   );
 }

@@ -1,3 +1,5 @@
+import { base64Decode, base64Encode } from "../common/base64";
+
 export async function deriveKey(password: string, salt: Uint8Array) {
   const encodedPassword = new TextEncoder().encode(password);
   const baseKey = await window.crypto.subtle.importKey(
@@ -87,16 +89,18 @@ export async function decryptData(
 }
 
 export function serielizeEncryptedData(encryptedData: EncryptedDataType) {
-  return JSON.stringify({
-    ciphertext: Array.from(encryptedData.ciphertext),
-    iv: Array.from(encryptedData.iv),
-    authTag: Array.from(encryptedData.authTag),
-    salt: Array.from(encryptedData.salt),
-  });
+  return base64Encode(
+    JSON.stringify({
+      ciphertext: Array.from(encryptedData.ciphertext),
+      iv: Array.from(encryptedData.iv),
+      authTag: Array.from(encryptedData.authTag),
+      salt: Array.from(encryptedData.salt),
+    })
+  );
 }
 
 export function deserializeEncryptedData(data: string): EncryptedDataType {
-  const parsedData = JSON.parse(data);
+  const parsedData = JSON.parse(base64Decode(data));
   return {
     ciphertext: new Uint8Array(parsedData.ciphertext),
     iv: new Uint8Array(parsedData.iv),

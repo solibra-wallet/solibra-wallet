@@ -7,18 +7,33 @@ import {
   serielizeEncryptedData,
 } from "./encryptionUtils";
 
+export async function generateNewKeypair(): Promise<Keypair> {
+  return Keypair.generate();
+}
+
 export async function generateNewKeyRecord(
+  keypair: Keypair,
   password: string
 ): Promise<KeyRecord> {
-  const keypair = Keypair.generate();
   const privateKey = bs58.encode(keypair.secretKey);
-
   return {
     name: keypair.publicKey.toString().slice(0, 5),
     publicKey: keypair.publicKey.toString(),
+    viewOnly: false,
     privateKeyBox: serielizeEncryptedData(
       await encryptData(privateKey, password)
     ),
+  };
+}
+
+export async function generateNewViewOnlyKeyRecord(
+  publicKey: string
+): Promise<KeyRecord> {
+  return {
+    name: publicKey.toString().slice(0, 5),
+    publicKey: publicKey.toString(),
+    viewOnly: true,
+    privateKeyBox: "",
   };
 }
 
@@ -39,5 +54,6 @@ export async function restorePrivateKey(
 export type KeyRecord = {
   name: string;
   publicKey: string;
+  viewOnly: boolean;
   privateKeyBox: string;
 };

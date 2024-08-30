@@ -79,10 +79,23 @@ const baseKeysStore: StateCreator<
       syncStoreAcrossRuntime();
     },
     removeKey: (i: number) => {
+      const oldKeyIndex = get().keyIndex;
+      if (i > get().keys.length - 1) {
+        return;
+      }
+
+      let newKeyIndex = 0;
+      if (oldKeyIndex > i) {
+        newKeyIndex = oldKeyIndex - 1;
+      } else if (oldKeyIndex === i) {
+        newKeyIndex = 0;
+      } else {
+        newKeyIndex = oldKeyIndex;
+      }
+
       const keys = get().keys.filter((_, index) => index !== i);
-      const keyIndex = get().keyIndex > keys.length - 1 ? 0 : get().keyIndex;
-      const currentKey = keys[keyIndex] ?? null;
-      set({ keys, keyIndex, currentKey });
+      const currentKey = keys[newKeyIndex] ?? null;
+      set({ keys, keyIndex: newKeyIndex, currentKey });
 
       syncStoreAcrossRuntime();
     },

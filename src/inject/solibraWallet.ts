@@ -16,6 +16,7 @@ import { ConnectRequestCommandFactory } from "../command/connectRequestCommand";
 import { CommandSource } from "../command/baseCommand";
 import { EventEmitter } from "eventemitter3";
 import { ForwardToBackgroundCommandTypeFactory } from "../command/forwardToBackgroundCommand";
+import { sleep } from "../common/sleep";
 
 export class SolibraWallet implements Solibra {
   #publicKey: PublicKey | null = null;
@@ -36,17 +37,9 @@ export class SolibraWallet implements Solibra {
       })
     );
 
-    // const res = await sendMsgToBackground(
-    //   ConnectRequestCommandFactory.buildNew({
-    //     from: CommandSource.INJECT_SCRIPT,
-    //   })
-    // );
-    // if (res.publicKey) {
-    //   this.#publicKey = new PublicKey(res.publicKey);
-    // }
     for (let i = 0; i < 10000; i++) {
       if (!this.publicKey) {
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await sleep(200);
       } else {
         break;
       }
