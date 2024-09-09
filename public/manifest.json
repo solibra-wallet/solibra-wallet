@@ -2,7 +2,9 @@
   "manifest_version": 3,
   "name": "solibra-wallet",
   "version": "1.0.0",
-  "action": { "default_popup": "popup/index.html" },
+  "action": {
+    "default_popup": "popup/popup.html"
+  },
   "background": {
     "service_worker": "background.js",
     "type": "module"
@@ -22,5 +24,5 @@
       "matches": ["<all_urls>"]
     }
   ],
-  "permissions": ["storage"]
+  "permissions": ["storage", "tabs"]
 }

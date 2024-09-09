@@ -1,5 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
-import { CommandSource } from "../command/baseCommand";
+import { CommandSource } from "../command/baseCommandType";
 import { ChangedAccountCommandFactory } from "../command/changedAccountCommand";
 import {
   ConnectResponseCommandFactory,
@@ -8,6 +8,7 @@ import {
 import { initialize } from "../wallet-standard/initialize";
 import { SolibraStandardWallet } from "../wallet-standard/wallet";
 import { SolibraWallet } from "./solibraWallet";
+import { OperationResponseCommandFactory } from "../command/operationResponseCommand";
 
 console.log("inject script loaded");
 
@@ -52,9 +53,27 @@ function registerMessageListeners() {
 
         // update wallet account & reload
         solibraWallet.setPublicKey(
-          command.publicKey ? new PublicKey(command.publicKey) : null
+          //command.publicKey ? new PublicKey(command.publicKey) : null
+          null
         );
         solibraWallet.reloadAccount();
+        return;
+      }
+
+      if (OperationResponseCommandFactory.isCommand(event.data)) {
+        console.log(
+          "[message] inject script received operation response command",
+          event.data
+        );
+        const command = OperationResponseCommandFactory.tryFrom(event.data);
+        if (!command) {
+          return;
+        }
+        solibraWallet.setOperationResult({
+          operationRequestId: command.requestId,
+          operationState: command.state,
+          operationResultPayload: command.resultPayload,
+        });
         return;
       }
     }

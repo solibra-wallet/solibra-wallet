@@ -168,7 +168,6 @@ export class SolibraStandardWallet implements Wallet {
     const address = this.#solibra.publicKey?.toBase58();
     console.log("wallet connected", address);
     if (address) {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const publicKey = this.#solibra.publicKey!.toBytes();
 
       const account = this.#account;

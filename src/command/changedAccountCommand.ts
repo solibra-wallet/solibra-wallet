@@ -1,4 +1,4 @@
-import { BaseCommandType, CommandSource } from "./baseCommand";
+import { BaseCommandType, CommandSource } from "./baseCommandType";
 
 const commandMeta = {
   command: "changedAccount",

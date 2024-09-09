@@ -2,23 +2,22 @@ import { BaseCommandType, CommandSource } from "./baseCommandType";
 import { OperationRequestCommandType } from "./operationRequestCommandType";
 
 const commandMeta = {
-  command: "connectRequest",
-  uuid: "de2f7373-3996-496e-82bf-804aacc28d51",
+  command: "SignMessageRequest",
+  uuid: "07559fed-41e8-4bbe-b32d-5d11ef6c6389",
 };
 
-export type ConnectRequestCommandType = BaseCommandType &
+export type SignMessageRequestCommandType = BaseCommandType &
   OperationRequestCommandType & {
     command: typeof commandMeta.command;
     uuid: typeof commandMeta.uuid;
     from: CommandSource;
     operationRequestPayload: {
-      site: string;
+      signPayload: string;
       [key: string]: any;
     };
-    [key: string]: any;
   };
 
-export class ConnectRequestCommandFactory {
+export class SignMessageRequestCommandFactory {
   static isCommand(payload: any): boolean {
     return (
       payload?.command === commandMeta.command &&
@@ -26,31 +25,29 @@ export class ConnectRequestCommandFactory {
     );
   }
 
-  static tryFrom(payload: any): ConnectRequestCommandType | null {
-    if (ConnectRequestCommandFactory.isCommand(payload)) {
-      return payload as ConnectRequestCommandType;
+  static tryFrom(payload: any): SignMessageRequestCommandType | null {
+    if (SignMessageRequestCommandFactory.isCommand(payload)) {
+      return payload as SignMessageRequestCommandType;
     }
     return null;
   }
 
   static buildNew({
     from,
+    signPayload,
     operationRequestId,
     operationRequestPublicKey,
-    site,
   }: {
     from: CommandSource;
+    signPayload: string;
     operationRequestId: string;
     operationRequestPublicKey: string;
-    site: string;
-  }): ConnectRequestCommandType {
+  }): SignMessageRequestCommandType {
     return {
       ...commandMeta,
       from,
-      operation: "connect",
-      operationRequestPayload: {
-        site,
-      },
+      operation: "signMessage",
+      operationRequestPayload: { signPayload },
       operationRequestId,
       operationRequestPublicKey,
     };

@@ -1,9 +1,13 @@
 import { createStore } from "zustand/vanilla";
 
-export const envStore = createStore<{
+export type EnvStoreType = {
   env: string;
   setEnv: (env: string) => void;
-}>()((set, get) => ({
-  env: "default",
-  setEnv: (env: string) => set({ env }),
-}));
+};
+
+export const envStore = createStore<EnvStoreType>()(
+  (set: any, get: any, store: any) => ({
+    env: "default",
+    setEnv: (env: string) => set({ env }),
+  })
+);

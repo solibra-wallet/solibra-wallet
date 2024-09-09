@@ -5,26 +5,10 @@ import { KeyRecord } from "./keyRecord";
 import { StateCreator } from "zustand";
 import { sendMsgToBackground } from "../content/messageUtils";
 import { RefreshKeysStoreCommandFactory } from "../command/refreshKeysStoreCommand";
-import { CommandSource } from "../command/baseCommand";
+import { CommandSource } from "../command/baseCommandType";
 import { sendMsgToContentScript } from "../background/messageUtils";
 import { envStore } from "./envStore";
-
-// Custom storage object
-const asyncLocalStorage: StateStorage = {
-  getItem: async (name: string): Promise<string | null> => {
-    console.log(name, "has been retrieved");
-    const localStore = await chrome.storage.local.get(name);
-    return localStore[name] ?? null;
-  },
-  setItem: async (name: string, value: string): Promise<void> => {
-    console.log(name, "with value", value, "has been saved");
-    await chrome.storage.local.set({ [name]: value });
-  },
-  removeItem: async (name: string): Promise<void> => {
-    console.log(name, "has been deleted");
-    await chrome.storage.local.remove(name);
-  },
-};
+import { asyncLocalStorage, syncStoreAcrossRuntime } from "./asyncLocalStorage";
 
 type KeysStoreDataType = {
   keys: KeyRecord[];
@@ -40,23 +24,6 @@ type KeysStoreActionsType = {
 };
 
 type KeysStoreType = KeysStoreDataType & KeysStoreActionsType;
-
-const syncStoreAcrossRuntime = () => {
-  console.log("[store] propogate reload store", envStore.getState().env);
-  if (envStore.getState().env === "POPUP_SCRIPT") {
-    sendMsgToBackground(
-      RefreshKeysStoreCommandFactory.buildNew({
-        from: CommandSource.POPUP_SCRIPT,
-      })
-    );
-  } else if (envStore.getState().env === "BACKGROUND") {
-    sendMsgToContentScript(
-      RefreshKeysStoreCommandFactory.buildNew({
-        from: CommandSource.BACKGROUND,
-      })
-    );
-  }
-};
 
 const baseKeysStore: StateCreator<
   KeysStoreType,

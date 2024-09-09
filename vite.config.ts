@@ -7,11 +7,12 @@ export default defineConfig({
   root: "src",
   build: {
     outDir: "../dist",
+    emptyOutDir: true,
     target: "esnext",
     rollupOptions: {
       input: {
-        ["popup/popup"]: "src/popup/index.html",
-        ["popup/main"]: "src/popup/main.tsx",
+        ["popup"]: "src/popup/popup.html",
+        ["popout"]: "src/popup/popout.html",
       },
       output: {
         entryFileNames: "[name].js",

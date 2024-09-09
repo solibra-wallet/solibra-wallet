@@ -1,4 +1,4 @@
-import { base64Decode, base64Encode } from "../common/base64";
+import { base64Decode, base64Encode } from "./encodeDecodeUtils";
 
 export async function deriveKey(password: string, salt: Uint8Array) {
   const encodedPassword = new TextEncoder().encode(password);

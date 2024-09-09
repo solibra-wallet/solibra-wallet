@@ -1,10 +1,13 @@
-import { CommandSource } from "../command/baseCommand";
+import { CommandSource } from "../command/baseCommandType";
 import { ChangedAccountCommandFactory } from "../command/changedAccountCommand";
 import { ConnectRequestCommandFactory } from "../command/connectRequestCommand";
 import { ForwardToInjectScriptCommandFactory } from "../command/forwardToInjectScriptCommand";
 import { RefreshKeysStoreCommandFactory } from "../command/refreshKeysStoreCommand";
+import { RefreshOperationStoreCommandFactory } from "../command/refreshOperationStoreCommand";
+import { SignMessageRequestCommandFactory } from "../command/signMessageRequestCommand";
 import { envStore } from "../store/envStore";
 import { vanillaKeysStore } from "../store/keysStore";
+import { operationStore } from "../store/operationStore";
 import { sendMsgToContentScript } from "./messageUtils";
 
 envStore.getState().setEnv("BACKGROUND");
@@ -27,9 +30,70 @@ function registerMessageListeners() {
 
       if (ConnectRequestCommandFactory.isCommand(request)) {
         // chrome.action.openPopup();
-        sendResponse({
-          publicKey: vanillaKeysStore.getState().currentKey?.publicKey,
+        // sendResponse({
+        //   publicKey: vanillaKeysStore.getState().currentKey?.publicKey,
+        // });
+        console.log("[message] background received connect request", request);
+        const command = ConnectRequestCommandFactory.tryFrom(request);
+        if (!command) {
+          return;
+        }
+        await operationStore.persist.rehydrate();
+        operationStore.getState().setOperation({
+          operation: command.operation,
+          requestPayload: command.operationRequestPayload,
+          requestId: command.operationRequestId,
+          requestPublicKey: command.operationRequestPublicKey,
         });
+        // await sendMsgToContentScript(
+        //   RefreshOperationStoreCommandFactory.buildNew({
+        //     from: CommandSource.BACKGROUND,
+        //   }),
+        //   true
+        // );
+        chrome.windows.create({
+          url: "popup/popout.html",
+          type: "popup",
+          top: request.top ?? 0,
+          left: request.left ?? 0,
+          width: 600,
+          height: 800,
+        });
+        sendResponse({});
+        return;
+      }
+
+      if (SignMessageRequestCommandFactory.isCommand(request)) {
+        console.log(
+          "[message] background received sign message request",
+          request
+        );
+        const command = SignMessageRequestCommandFactory.tryFrom(request);
+        if (!command) {
+          return;
+        }
+        await operationStore.persist.rehydrate();
+        operationStore.getState().setOperation({
+          operation: command.operation,
+          requestPayload: command.operationRequestPayload,
+          requestId: command.operationRequestId,
+          requestPublicKey: command.operationRequestPublicKey,
+        });
+        // await sendMsgToContentScript(
+        //   RefreshOperationStoreCommandFactory.buildNew({
+        //     from: CommandSource.BACKGROUND,
+        //   }),
+        //   true
+        // );
+        chrome.windows.create({
+          url: "popup/popout.html",
+          type: "popup",
+          top: request.top ?? 0,
+          left: request.left ?? 0,
+          width: 600,
+          height: 800,
+        });
+        sendResponse({});
         return;
       }
 

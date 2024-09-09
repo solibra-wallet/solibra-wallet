@@ -1,15 +1,15 @@
-import { BaseCommandType, CommandSource } from "../../command/baseCommand";
+import { BaseCommandType, CommandSource } from "../../command/baseCommandType";
 
 async function getActiveTab() {
-  const [tab] = await chrome.tabs.query({
+  const tabs = await chrome.tabs.query({
     active: true,
-    lastFocusedWindow: true,
+    // lastFocusedWindow: true,
   });
-  return tab;
+  return tabs[0];
 }
 
 // send msg: popup script -> background
-async function sendMsgToBackground(msg: BaseCommandType) {
+export async function sendMsgToBackground(msg: BaseCommandType) {
   console.log("[message] send message from popup script to background");
   const ret = await chrome.runtime.sendMessage({
     ...msg,
@@ -19,10 +19,10 @@ async function sendMsgToBackground(msg: BaseCommandType) {
 }
 
 // send msg: popup script -> content script
-async function sendMsgToContentScript(msg: BaseCommandType) {
+export async function sendMsgToContentScript(msg: BaseCommandType) {
   console.log("[message] send message from popup script to content script");
   const tab = await getActiveTab();
-  if (!tab.id) {
+  if (!tab?.id) {
     console.error("[message] tab id not found");
     return;
   }

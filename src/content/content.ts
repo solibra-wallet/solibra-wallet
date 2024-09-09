@@ -1,9 +1,9 @@
-import { CommandSource } from "../command/baseCommand";
+import { CommandSource } from "../command/baseCommandType";
 import { ChangedAccountCommandFactory } from "../command/changedAccountCommand";
 import { ConnectRequestCommandFactory } from "../command/connectRequestCommand";
 import { ConnectResponseCommandFactory } from "../command/connectResponseCommand";
-import { ForwardToBackgroundCommandTypeFactory } from "../command/forwardToBackgroundCommand";
 import { ForwardToInjectScriptCommandFactory } from "../command/forwardToInjectScriptCommand";
+import { SignMessageRequestCommandFactory } from "../command/signMessageRequestCommand";
 import { sendMsgToBackground, sendMsgToInjectScript } from "./messageUtils";
 
 function registerMessageListeners() {
@@ -15,7 +15,7 @@ function registerMessageListeners() {
         request,
         sender
       );
-      sendResponse({ response: "pong from content script" });
+      // sendResponse({ response: "pong from content script" });
 
       let currentCommand = request;
 
@@ -34,10 +34,13 @@ function registerMessageListeners() {
           if (command.receivers.includes(CommandSource.CONTENT_SCRIPT)) {
             currentCommand = command.forwardCommand;
           } else {
+            sendResponse({});
             return; // quit
           }
         }
       }
+
+      sendResponse({});
     }
   );
 
@@ -52,46 +55,46 @@ function registerMessageListeners() {
         event
       );
 
-      let currentCommand = event.data;
-
-      // handle forward to background command
-      if (ForwardToBackgroundCommandTypeFactory.isCommand(currentCommand)) {
-        console.log(
-          "[message] content script received forward to background command",
-          currentCommand
-        );
-        const command =
-          ForwardToBackgroundCommandTypeFactory.tryFrom(currentCommand);
-        if (command && command.forwardCommand) {
-          await sendMsgToBackground(command.forwardCommand);
-
-          // see if content-script also audience and wanna unwrap to handle
-          if (command.receivers.includes(CommandSource.CONTENT_SCRIPT)) {
-            currentCommand = command.forwardCommand;
-          } else {
-            return; // quit
-          }
-        }
-      }
+      const currentCommand = event.data;
 
       if (ConnectRequestCommandFactory.isCommand(currentCommand)) {
+        // console.log(
+        //   "[message] content script received connect request command",
+        //   currentCommand
+        // );
+        // // ask background for request connect, and get back result
+        // const ret = await sendMsgToBackground(
+        //   ConnectRequestCommandFactory.buildNew({
+        //     from: CommandSource.CONTENT_SCRIPT,
+        //   })
+        // );
+        // // notify inject script to update public key
+        // await sendMsgToInjectScript(
+        //   ConnectResponseCommandFactory.buildNew({
+        //     from: CommandSource.CONTENT_SCRIPT,
+        //     publicKey: ret.publicKey,
+        //   })
+        // );
+        // return;
+        await sendMsgToBackground({
+          ...currentCommand,
+          left: window.screenLeft + window.outerWidth - 600,
+          top: window.screenTop,
+        });
+        return;
+      }
+
+      if (SignMessageRequestCommandFactory.isCommand(currentCommand)) {
         console.log(
-          "[message] content script received connect request command",
+          "[message] content script received sign message request command",
           currentCommand
         );
-        // ask background for request connect, and get back result
-        const ret = await sendMsgToBackground(
-          ConnectRequestCommandFactory.buildNew({
-            from: CommandSource.CONTENT_SCRIPT,
-          })
-        );
-        // notify inject script to update public key
-        await sendMsgToInjectScript(
-          ConnectResponseCommandFactory.buildNew({
-            from: CommandSource.CONTENT_SCRIPT,
-            publicKey: ret.publicKey,
-          })
-        );
+        // ask background for request sign message, and get back result
+        await sendMsgToBackground({
+          ...currentCommand,
+          left: window.screenLeft + window.outerWidth - 600,
+          top: window.screenTop,
+        });
         return;
       }
     }

@@ -1,18 +1,18 @@
 import { BaseCommandType, CommandSource } from "./baseCommandType";
 
 const commandMeta = {
-  command: "refreshKeysStore",
-  uuid: "0219508e-8ca3-42fa-9d78-1e1dac076035",
+  command: "refreshOperationStore",
+  uuid: "72ec47af-083f-4026-82fe-f2af529399c4",
 };
 
-export type RefreshKeysStoreCommandType = BaseCommandType & {
+export type RefreshOperationStoreCommandType = BaseCommandType & {
   command: typeof commandMeta.command;
   uuid: typeof commandMeta.uuid;
   from: CommandSource;
   [key: string]: any;
 };
 
-export class RefreshKeysStoreCommandFactory {
+export class RefreshOperationStoreCommandFactory {
   static isCommand(payload: any): boolean {
     return (
       payload?.command === commandMeta.command &&
@@ -20,9 +20,9 @@ export class RefreshKeysStoreCommandFactory {
     );
   }
 
-  static tryFrom(payload: any): RefreshKeysStoreCommandType | null {
-    if (RefreshKeysStoreCommandFactory.isCommand(payload)) {
-      return payload as RefreshKeysStoreCommandType;
+  static tryFrom(payload: any): RefreshOperationStoreCommandType | null {
+    if (RefreshOperationStoreCommandFactory.isCommand(payload)) {
+      return payload as RefreshOperationStoreCommandType;
     }
     return null;
   }
@@ -31,7 +31,7 @@ export class RefreshKeysStoreCommandFactory {
     from,
   }: {
     from: CommandSource;
-  }): RefreshKeysStoreCommandType {
+  }): RefreshOperationStoreCommandType {
     return { ...commandMeta, from };
   }
 }

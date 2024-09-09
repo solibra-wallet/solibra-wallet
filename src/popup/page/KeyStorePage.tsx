@@ -3,9 +3,15 @@ import {
   generateNewKeypair,
   generateNewKeyRecord,
   generateNewViewOnlyKeyRecord,
+  restoreKeypair,
 } from "../../store/keyRecord";
-import { useHref } from "react-router-dom";
-import { useRef } from "react";
+import { useHref, useNavigate } from "react-router-dom";
+import { useEffect, useRef } from "react";
+import {
+  OperationStateType,
+  operationStore,
+  useOperationStore,
+} from "../../store/operationStore.ts";
 
 function KeyStorePage() {
   const password = useKeysStore((state) => state.password);
@@ -15,11 +21,21 @@ function KeyStorePage() {
   const addKey = useKeysStore((state) => state.addKey);
   const removeKey = useKeysStore((state) => state.removeKey);
   const selectKey = useKeysStore((state) => state.selectKey);
+  // const operation = useOperationStore((state) => state.operation);
+  // const navigate = useNavigate();
+
+  // useEffect(() => {
+  //   operationStore.persist.rehydrate();
+  //   console.log("KeyStorePage", operationStore.getState().operation, operation);
+  //   if (operation === "signMessage") {
+  //     navigate("/signMessage");
+  //   }
+  // }, [navigate, operation]);
 
   const viewOnlyWalletInputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <div style={{ width: 600, wordWrap: "break-word" }}>
+    <div style={{ width: 400, wordWrap: "break-word" }}>
       <h1>Key store</h1>
       <div className="card">
         <button
@@ -57,7 +73,8 @@ function KeyStorePage() {
             <div key={i}>
               {keyIndex === i ? "*" : ""}{" "}
               <button onClick={() => selectKey(i)}>Select</button>
-              {key.name}: {key.publicKey}
+              {key.name}: {key.publicKey.slice(0, 5)}...
+              {key.publicKey.slice(key.publicKey.length - 4)}
               <button onClick={() => removeKey(i)}>Remove key</button>
               <br />
             </div>

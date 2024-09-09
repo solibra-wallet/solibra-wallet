@@ -5,7 +5,7 @@ import {
   deserializeEncryptedData,
   encryptData,
   serielizeEncryptedData,
-} from "./encryptionUtils";
+} from "../common/passwordEncryptionUtils";
 
 export async function generateNewKeypair(): Promise<Keypair> {
   return Keypair.generate();
@@ -37,18 +37,18 @@ export async function generateNewViewOnlyKeyRecord(
   };
 }
 
-export async function restorePrivateKey(
+export async function restoreKeypair(
   keyRecord: KeyRecord,
   password: string
-): Promise<string> {
+): Promise<Keypair> {
   const encryptedDataType = deserializeEncryptedData(keyRecord.privateKeyBox);
   const decryptedKey = await decryptData(encryptedDataType, password);
 
-  const privateKey = Uint8Array.from(bs58.decode(decryptedKey).slice(0, 32));
+  const privateKey = Uint8Array.from(bs58.decode(decryptedKey).slice(0, 64));
 
-  const wallet = Keypair.fromSeed(privateKey);
+  const keypair = Keypair.fromSecretKey(privateKey);
 
-  return wallet.publicKey.toString();
+  return keypair;
 }
 
 export type KeyRecord = {
