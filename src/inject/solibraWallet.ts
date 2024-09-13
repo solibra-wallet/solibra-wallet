@@ -12,11 +12,11 @@ import {
   SolanaSignInOutput,
 } from "@solana/wallet-standard-features";
 import { sendMsgToContentScript } from "./messageUtils";
-import { ConnectRequestCommandFactory } from "../command/connectRequestCommand";
-import { CommandSource } from "../command/baseCommandType";
+import { ConnectRequestCommandFactory } from "../command/operationRequest/connectRequestCommand";
+import { CommandSource } from "../command/base/baseCommandType";
 import { EventEmitter } from "eventemitter3";
 import { sleep } from "../common/sleep";
-import { SignMessageRequestCommandFactory } from "../command/signMessageRequestCommand";
+import { SignMessageRequestCommandFactory } from "../command/operationRequest/signMessageRequestCommand";
 import { OperationStateType } from "../store/operationStore";
 import {
   decryptMessage,
@@ -24,10 +24,8 @@ import {
   generateKeyPair,
 } from "../common/asymEncryptionUtils";
 import { v4 as uuidv4 } from "uuid";
-import {
-  base64Encode,
-  base64EncodeFromUint8Array,
-} from "../common/encodeDecodeUtils";
+import { bytesToHex, hexToBytes } from "../common/encodingUtils";
+import { OperationResponseCommandFactory } from "../command/operationResponseCommand";
 
 export class SolibraWallet implements Solibra {
   #publicKey: PublicKey | null = null;
@@ -35,7 +33,7 @@ export class SolibraWallet implements Solibra {
 
   #operationRequestId: string | null = null;
   #operationState: OperationStateType = OperationStateType.IDLE;
-  #operationResultPayload: Record<string, any> = {};
+  #operationResultEncryptedPayload: string | null = null;
 
   get publicKey(): PublicKey | null {
     return this.#publicKey;
@@ -75,8 +73,8 @@ export class SolibraWallet implements Solibra {
     await sendMsgToContentScript(
       ConnectRequestCommandFactory.buildNew({
         from: CommandSource.INJECT_SCRIPT,
-        operationRequestId,
-        operationRequestPublicKey: exportedPublicKey,
+        requestId: operationRequestId,
+        requestPublicKey: exportedPublicKey,
         site: window.location.origin,
       })
     );
@@ -106,14 +104,24 @@ export class SolibraWallet implements Solibra {
       throw new Error("Connect wallet timeout.");
     }
 
-    const publicKeyBytes = await decryptMessage(
-      encryptKeyPair.privateKey,
-      this.#operationResultPayload.publicKey
-    );
+    if (this.#operationResultEncryptedPayload === null) {
+      throw new Error("operationResultEncryptedPayload is null.");
+    }
 
-    this.#publicKey = new PublicKey(publicKeyBytes);
+    const operationResultPayload =
+      await OperationResponseCommandFactory.defaultDecrypt(
+        this.#operationResultEncryptedPayload,
+        encryptKeyPair.privateKey
+      );
 
-    return { publicKey: this.publicKey };
+    if (!operationResultPayload || !operationResultPayload.publicKey) {
+      throw new Error("operationResultPayload corrupted.");
+    }
+
+    this.#publicKey = new PublicKey(operationResultPayload.publicKey as string);
+    return {
+      publicKey: operationResultPayload.publicKey,
+    };
   }
 
   async disconnect(): Promise<void> {
@@ -155,9 +163,9 @@ export class SolibraWallet implements Solibra {
     await sendMsgToContentScript(
       SignMessageRequestCommandFactory.buildNew({
         from: CommandSource.INJECT_SCRIPT,
-        signPayload: base64EncodeFromUint8Array(message),
-        operationRequestId,
-        operationRequestPublicKey: exportedPublicKey,
+        signPayload: bytesToHex(message),
+        requestId: operationRequestId,
+        requestPublicKey: exportedPublicKey,
       })
     );
 
@@ -186,13 +194,27 @@ export class SolibraWallet implements Solibra {
       throw new Error("Connect wallet timeout.");
     }
 
-    const signature = await decryptMessage(
-      encryptKeyPair.privateKey,
-      this.#operationResultPayload.signature
-    );
+    if (this.#operationResultEncryptedPayload === null) {
+      throw new Error("operationResultEncryptedPayload is null.");
+    }
+
+    const operationResultPayload =
+      await OperationResponseCommandFactory.defaultDecrypt(
+        this.#operationResultEncryptedPayload,
+        encryptKeyPair.privateKey
+      );
+
+    if (
+      !operationResultPayload ||
+      !operationResultPayload.signature ||
+      typeof operationResultPayload.signature !== "string"
+    ) {
+      throw new Error("operationResultPayload corrupted.");
+    }
+    const signature = hexToBytes(operationResultPayload.signature);
 
     return {
-      signature,
+      signature: signature,
     };
   }
 
@@ -230,20 +252,20 @@ export class SolibraWallet implements Solibra {
   startWaitOperation({ operationRequestId }: { operationRequestId: string }) {
     this.#operationRequestId = operationRequestId;
     this.#operationState = OperationStateType.PENDING;
-    this.#operationResultPayload = {};
+    this.#operationResultEncryptedPayload = null;
   }
 
   setOperationResult({
-    operationRequestId,
+    requestId,
     operationState,
-    operationResultPayload,
+    resultEncryptedPayload,
   }: {
-    operationRequestId: string;
+    requestId: string;
     operationState: OperationStateType;
-    operationResultPayload: Record<string, any>;
+    resultEncryptedPayload: string;
   }) {
-    this.#operationRequestId = operationRequestId;
+    this.#operationRequestId = requestId;
     this.#operationState = operationState;
-    this.#operationResultPayload = operationResultPayload;
+    this.#operationResultEncryptedPayload = resultEncryptedPayload;
   }
 }

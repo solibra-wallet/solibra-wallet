@@ -1,4 +1,4 @@
-import { BaseCommandType, CommandSource } from "./baseCommandType";
+import { BaseCommandType, CommandSource } from "../base/baseCommandType";
 
 const commandMeta = {
   command: "forwardToInjectScript",
@@ -11,7 +11,6 @@ export type ForwardToInjectScriptCommandType = BaseCommandType & {
   from: CommandSource;
   receivers: CommandSource[];
   forwardCommand: BaseCommandType;
-  [key: string]: any;
 };
 
 export class ForwardToInjectScriptCommandFactory {

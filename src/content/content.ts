@@ -1,9 +1,9 @@
-import { CommandSource } from "../command/baseCommandType";
+import { CommandSource } from "../command/base/baseCommandType";
 import { ChangedAccountCommandFactory } from "../command/changedAccountCommand";
-import { ConnectRequestCommandFactory } from "../command/connectRequestCommand";
-import { ConnectResponseCommandFactory } from "../command/connectResponseCommand";
-import { ForwardToInjectScriptCommandFactory } from "../command/forwardToInjectScriptCommand";
-import { SignMessageRequestCommandFactory } from "../command/signMessageRequestCommand";
+import { ConnectRequestCommandFactory } from "../command/operationRequest/connectRequestCommand";
+// import { ConnectResponseCommandFactory } from "../command/connectResponseCommand";
+import { ForwardToInjectScriptCommandFactory } from "../command/transport/forwardToInjectScriptCommand";
+import { SignMessageRequestCommandFactory } from "../command/operationRequest/signMessageRequestCommand";
 import { sendMsgToBackground, sendMsgToInjectScript } from "./messageUtils";
 
 function registerMessageListeners() {

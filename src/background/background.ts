@@ -1,10 +1,10 @@
-import { CommandSource } from "../command/baseCommandType";
+import { CommandSource } from "../command/base/baseCommandType";
 import { ChangedAccountCommandFactory } from "../command/changedAccountCommand";
-import { ConnectRequestCommandFactory } from "../command/connectRequestCommand";
-import { ForwardToInjectScriptCommandFactory } from "../command/forwardToInjectScriptCommand";
-import { RefreshKeysStoreCommandFactory } from "../command/refreshKeysStoreCommand";
-import { RefreshOperationStoreCommandFactory } from "../command/refreshOperationStoreCommand";
-import { SignMessageRequestCommandFactory } from "../command/signMessageRequestCommand";
+import { ConnectRequestCommandFactory } from "../command/operationRequest/connectRequestCommand";
+import { ForwardToInjectScriptCommandFactory } from "../command/transport/forwardToInjectScriptCommand";
+import { RefreshKeysStoreCommandFactory } from "../command/storeSync/refreshKeysStoreCommand";
+import { RefreshOperationStoreCommandFactory } from "../command/storeSync/refreshOperationStoreCommand";
+import { SignMessageRequestCommandFactory } from "../command/operationRequest/signMessageRequestCommand";
 import { envStore } from "../store/envStore";
 import { vanillaKeysStore } from "../store/keysStore";
 import { operationStore } from "../store/operationStore";
@@ -36,14 +36,15 @@ function registerMessageListeners() {
         console.log("[message] background received connect request", request);
         const command = ConnectRequestCommandFactory.tryFrom(request);
         if (!command) {
+          sendResponse({});
           return;
         }
         await operationStore.persist.rehydrate();
         operationStore.getState().setOperation({
           operation: command.operation,
-          requestPayload: command.operationRequestPayload,
-          requestId: command.operationRequestId,
-          requestPublicKey: command.operationRequestPublicKey,
+          requestPayload: command.requestPayload,
+          requestId: command.requestId,
+          requestPublicKey: command.requestPublicKey,
         });
         // await sendMsgToContentScript(
         //   RefreshOperationStoreCommandFactory.buildNew({
@@ -70,14 +71,15 @@ function registerMessageListeners() {
         );
         const command = SignMessageRequestCommandFactory.tryFrom(request);
         if (!command) {
+          sendResponse({});
           return;
         }
         await operationStore.persist.rehydrate();
         operationStore.getState().setOperation({
           operation: command.operation,
-          requestPayload: command.operationRequestPayload,
-          requestId: command.operationRequestId,
-          requestPublicKey: command.operationRequestPublicKey,
+          requestPayload: command.requestPayload,
+          requestId: command.requestId,
+          requestPublicKey: command.requestPublicKey,
         });
         // await sendMsgToContentScript(
         //   RefreshOperationStoreCommandFactory.buildNew({

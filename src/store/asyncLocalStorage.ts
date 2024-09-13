@@ -2,9 +2,9 @@ import { StateStorage } from "zustand/middleware";
 import { envStore } from "./envStore";
 import { sendMsgToBackground } from "../content/messageUtils";
 import { sendMsgToContentScript } from "../background/messageUtils";
-import { RefreshKeysStoreCommandFactory } from "../command/refreshKeysStoreCommand";
-import { CommandSource } from "../command/baseCommandType";
-import { RefreshOperationStoreCommandFactory } from "../command/refreshOperationStoreCommand";
+import { RefreshKeysStoreCommandFactory } from "../command/storeSync/refreshKeysStoreCommand";
+import { CommandSource } from "../command/base/baseCommandType";
+import { RefreshOperationStoreCommandFactory } from "../command/storeSync/refreshOperationStoreCommand";
 
 // Custom storage object
 export const asyncLocalStorage: StateStorage = {
@@ -23,29 +23,42 @@ export const asyncLocalStorage: StateStorage = {
   },
 };
 
-export const syncStoreAcrossRuntime = async () => {
+export enum STORE_SCOPE {
+  KEYS = "keys",
+  OPERATION = "operation",
+}
+
+export const syncStoreAcrossRuntime = async (scopes: STORE_SCOPE[]) => {
   console.log("[store] propogate reload store", envStore.getState().env);
   if (envStore.getState().env === "POPUP_SCRIPT") {
-    await sendMsgToBackground(
-      RefreshKeysStoreCommandFactory.buildNew({
-        from: CommandSource.POPUP_SCRIPT,
-      })
-    );
-    await sendMsgToBackground(
-      RefreshOperationStoreCommandFactory.buildNew({
-        from: CommandSource.POPUP_SCRIPT,
-      })
-    );
+    if (scopes.includes(STORE_SCOPE.KEYS)) {
+      await sendMsgToBackground(
+        RefreshKeysStoreCommandFactory.buildNew({
+          from: CommandSource.POPUP_SCRIPT,
+        })
+      );
+    }
+    if (scopes.includes(STORE_SCOPE.OPERATION)) {
+      await sendMsgToBackground(
+        RefreshOperationStoreCommandFactory.buildNew({
+          from: CommandSource.POPUP_SCRIPT,
+        })
+      );
+    }
   } else if (envStore.getState().env === "BACKGROUND") {
-    await sendMsgToContentScript(
-      RefreshKeysStoreCommandFactory.buildNew({
-        from: CommandSource.BACKGROUND,
-      })
-    );
-    await sendMsgToContentScript(
-      RefreshOperationStoreCommandFactory.buildNew({
-        from: CommandSource.BACKGROUND,
-      })
-    );
+    if (scopes.includes(STORE_SCOPE.KEYS)) {
+      await sendMsgToContentScript(
+        RefreshKeysStoreCommandFactory.buildNew({
+          from: CommandSource.BACKGROUND,
+        })
+      );
+    }
+    if (scopes.includes(STORE_SCOPE.OPERATION)) {
+      await sendMsgToContentScript(
+        RefreshOperationStoreCommandFactory.buildNew({
+          from: CommandSource.BACKGROUND,
+        })
+      );
+    }
   }
 };

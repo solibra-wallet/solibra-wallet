@@ -1,4 +1,7 @@
-import { BaseCommandType, CommandSource } from "../command/baseCommandType";
+import {
+  BaseCommandType,
+  CommandSource,
+} from "../command/base/baseCommandType";
 
 export function getExtensionId() {
   return document?.getElementById("solibra-extension-id")?.getAttribute("data");

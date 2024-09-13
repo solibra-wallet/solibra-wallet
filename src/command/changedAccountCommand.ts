@@ -1,4 +1,4 @@
-import { BaseCommandType, CommandSource } from "./baseCommandType";
+import { BaseCommandType, CommandSource } from "./base/baseCommandType";
 
 const commandMeta = {
   command: "changedAccount",
@@ -10,7 +10,6 @@ export type ChangedAccountCommandType = BaseCommandType & {
   uuid: typeof commandMeta.uuid;
   from: CommandSource;
   publicKey: string | null;
-  [key: string]: any;
 };
 
 export class ChangedAccountCommandFactory {

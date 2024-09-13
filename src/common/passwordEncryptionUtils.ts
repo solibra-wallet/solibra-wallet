@@ -1,6 +1,9 @@
-import { base64Decode, base64Encode } from "./encodeDecodeUtils";
+import { base64Decode, base64Encode } from "./encodingUtils";
 
-export async function deriveKey(password: string, salt: Uint8Array) {
+async function deriveKey(
+  password: string,
+  salt: Uint8Array
+): Promise<CryptoKey> {
   const encodedPassword = new TextEncoder().encode(password);
   const baseKey = await window.crypto.subtle.importKey(
     "raw",
@@ -33,10 +36,7 @@ type EncryptedDataType = {
   salt: Uint8Array;
 };
 
-export async function encryptData(
-  data: string,
-  password: string
-): Promise<EncryptedDataType> {
+async function encryptData(data: string, password: string): Promise<string> {
   const salt = window.crypto.getRandomValues(new Uint8Array(16)); // 128-bit salt
   const iv = window.crypto.getRandomValues(new Uint8Array(12)); // 12 bytes for AES-GCM
   const key = await deriveKey(password, salt);
@@ -59,19 +59,20 @@ export async function encryptData(
   );
   const authTag = encryptedContent.slice(encryptedContent.byteLength - 16);
 
-  return {
+  return serielizeEncryptedData({
     ciphertext: new Uint8Array(ciphertext),
     iv: iv,
     authTag: new Uint8Array(authTag),
     salt: salt,
-  };
+  });
 }
 
-export async function decryptData(
-  encryptedData: EncryptedDataType,
+async function decryptData(
+  encryptedData: string,
   password: string
-) {
-  const { ciphertext, iv, authTag, salt } = encryptedData;
+): Promise<string> {
+  const { ciphertext, iv, authTag, salt } =
+    deserializeEncryptedData(encryptedData);
   const key = await deriveKey(password, salt);
 
   // re-combine the ciphertext and the authentication tag
@@ -88,7 +89,7 @@ export async function decryptData(
   return new TextDecoder().decode(decryptedContent);
 }
 
-export function serielizeEncryptedData(encryptedData: EncryptedDataType) {
+function serielizeEncryptedData(encryptedData: EncryptedDataType) {
   return base64Encode(
     JSON.stringify({
       ciphertext: Array.from(encryptedData.ciphertext),
@@ -99,7 +100,7 @@ export function serielizeEncryptedData(encryptedData: EncryptedDataType) {
   );
 }
 
-export function deserializeEncryptedData(data: string): EncryptedDataType {
+function deserializeEncryptedData(data: string): EncryptedDataType {
   const parsedData = JSON.parse(base64Decode(data));
   return {
     ciphertext: new Uint8Array(parsedData.ciphertext),
@@ -108,3 +109,5 @@ export function deserializeEncryptedData(data: string): EncryptedDataType {
     salt: new Uint8Array(parsedData.salt),
   };
 }
+
+export { encryptData, decryptData };

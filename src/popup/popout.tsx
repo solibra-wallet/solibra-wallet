@@ -3,7 +3,11 @@ import { createRoot } from "react-dom/client";
 import "./index.css";
 import "./App.css";
 import { envStore } from "../store/envStore.ts";
-import { createMemoryRouter, RouterProvider } from "react-router-dom";
+import {
+  createMemoryRouter,
+  RouterProvider,
+  useNavigate,
+} from "react-router-dom";
 import KeyStorePage from "./page/KeyStorePage.tsx";
 import SignMessagePage from "./page/SignMessagePage.tsx";
 import ConnectPage from "./page/ConnectPage.tsx";
@@ -11,24 +15,10 @@ import { useOperationStore } from "../store/operationStore.ts";
 import { vanillaKeysStore } from "../store/keysStore.ts";
 envStore.getState().setEnv("POPUP_SCRIPT");
 
-function App() {
+function App({ children }: { children: React.ReactNode }) {
   const operation = useOperationStore((state) => state.operation);
   const [loadTimer, setLoadTimer] = useState<NodeJS.Timeout | null>(null);
-
-  const routes = [
-    {
-      path: "/",
-      element: <div>Loading...</div>,
-    },
-    {
-      path: "/connect",
-      element: <ConnectPage />,
-    },
-    {
-      path: "/signMessage",
-      element: <SignMessagePage />,
-    },
-  ];
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (operation === null) {
@@ -37,7 +27,7 @@ function App() {
           setInterval(async () => {
             console.log("reload operation store for popout...");
             await vanillaKeysStore.persist.rehydrate();
-          }, 300)
+          }, 1000)
         );
       }
     } else {
@@ -49,6 +39,7 @@ function App() {
     }
   }, [loadTimer, operation]);
 
+  console.log("operation", operation);
   let currentPage = "/";
   if (operation === "connect") {
     currentPage = "/connect";
@@ -56,8 +47,33 @@ function App() {
     currentPage = "/signMessage";
   }
 
+  useEffect(() => {
+    if (currentPage && currentPage !== "/") {
+      navigate(currentPage);
+    }
+  }, [currentPage, navigate]);
+
+  return <div className="App">{children}</div>;
+}
+
+function RoutedApp() {
+  const routes = [
+    {
+      path: "/",
+      element: <App>Loading...</App>,
+    },
+    {
+      path: "/connect",
+      element: <ConnectPage />,
+    },
+    {
+      path: "/signMessage",
+      element: <SignMessagePage />,
+    },
+  ];
+
   const router = createMemoryRouter(routes, {
-    initialEntries: [currentPage],
+    initialEntries: ["/"],
     initialIndex: 0,
   });
 
@@ -66,6 +82,6 @@ function App() {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App />
+    <RoutedApp />
   </StrictMode>
 );

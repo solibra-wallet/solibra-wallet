@@ -1,4 +1,7 @@
-import { BaseCommandType, CommandSource } from "../command/baseCommandType";
+import {
+  BaseCommandType,
+  CommandSource,
+} from "../command/base/baseCommandType";
 
 export async function sendMsgToBackground(msg: BaseCommandType): Promise<any> {
   console.log("[message] send message from content script to background");

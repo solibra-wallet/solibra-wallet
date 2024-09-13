@@ -1,4 +1,7 @@
-import { BaseCommandType, CommandSource } from "../command/baseCommandType";
+import {
+  BaseCommandType,
+  CommandSource,
+} from "../command/base/baseCommandType";
 
 async function getActiveTab() {
   const [tab] = await chrome.tabs.query({

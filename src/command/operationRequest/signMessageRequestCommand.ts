@@ -1,5 +1,8 @@
-import { BaseCommandType, CommandSource } from "./baseCommandType";
-import { OperationRequestCommandType } from "./operationRequestCommandType";
+import { BaseCommandType, CommandSource } from "../base/baseCommandType";
+import {
+  OperationRequestCommandTemplate,
+  OperationRequestCommandType,
+} from "../base/operationRequestCommandType";
 
 const commandMeta = {
   command: "SignMessageRequest",
@@ -11,9 +14,8 @@ export type SignMessageRequestCommandType = BaseCommandType &
     command: typeof commandMeta.command;
     uuid: typeof commandMeta.uuid;
     from: CommandSource;
-    operationRequestPayload: {
+    requestPayload: {
       signPayload: string;
-      [key: string]: any;
     };
   };
 
@@ -35,21 +37,23 @@ export class SignMessageRequestCommandFactory {
   static buildNew({
     from,
     signPayload,
-    operationRequestId,
-    operationRequestPublicKey,
+    requestId,
+    requestPublicKey,
   }: {
     from: CommandSource;
     signPayload: string;
-    operationRequestId: string;
-    operationRequestPublicKey: string;
+    requestId: string;
+    requestPublicKey: string;
   }): SignMessageRequestCommandType {
     return {
       ...commandMeta,
+      ...OperationRequestCommandTemplate.buildNew({
+        operation: "signMessage",
+        requestId: requestId,
+        requestPublicKey: requestPublicKey,
+      }),
       from,
-      operation: "signMessage",
-      operationRequestPayload: { signPayload },
-      operationRequestId,
-      operationRequestPublicKey,
+      requestPayload: { signPayload },
     };
   }
 }

@@ -1,4 +1,4 @@
-import { BaseCommandType, CommandSource } from "./baseCommandType";
+import { BaseCommandType, CommandSource } from "../base/baseCommandType";
 
 const commandMeta = {
   command: "refreshKeysStore",
@@ -9,7 +9,6 @@ export type RefreshKeysStoreCommandType = BaseCommandType & {
   command: typeof commandMeta.command;
   uuid: typeof commandMeta.uuid;
   from: CommandSource;
-  [key: string]: any;
 };
 
 export class RefreshKeysStoreCommandFactory {

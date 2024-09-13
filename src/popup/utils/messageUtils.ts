@@ -1,4 +1,7 @@
-import { BaseCommandType, CommandSource } from "../../command/baseCommandType";
+import {
+  BaseCommandType,
+  CommandSource,
+} from "../../command/base/baseCommandType";
 
 async function getActiveTab() {
   const tabs = await chrome.tabs.query({
@@ -20,18 +23,22 @@ export async function sendMsgToBackground(msg: BaseCommandType) {
 
 // send msg: popup script -> content script
 export async function sendMsgToContentScript(msg: BaseCommandType) {
-  console.log("[message] send message from popup script to content script");
-  const tab = await getActiveTab();
-  if (!tab?.id) {
-    console.error("[message] tab id not found");
-    return;
+  try {
+    console.log("[message] send message from popup script to content script");
+    const tab = await getActiveTab();
+    if (!tab?.id) {
+      console.error("[message] tab id not found");
+      return;
+    }
+    const ret = await chrome.tabs.sendMessage(tab.id, {
+      ...msg,
+      from: CommandSource.POPUP_SCRIPT,
+    });
+    console.log(
+      "[message] receive reply from content script at popup script",
+      ret
+    );
+  } catch (e) {
+    console.error("[message] error sending message to content script", e);
   }
-  const ret = await chrome.tabs.sendMessage(tab.id, {
-    ...msg,
-    from: CommandSource.POPUP_SCRIPT,
-  });
-  console.log(
-    "[message] receive reply from content script at popup script",
-    ret
-  );
 }

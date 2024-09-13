@@ -3,34 +3,17 @@ import {
   generateNewKeypair,
   generateNewKeyRecord,
   generateNewViewOnlyKeyRecord,
-  restoreKeypair,
 } from "../../store/keyRecord";
-import { useHref, useNavigate } from "react-router-dom";
-import { useEffect, useRef } from "react";
-import {
-  OperationStateType,
-  operationStore,
-  useOperationStore,
-} from "../../store/operationStore.ts";
+import { useRef } from "react";
 
 function KeyStorePage() {
-  const password = useKeysStore((state) => state.password);
+  const password = useKeysStore((state) => state.lockKey);
   const keys = useKeysStore((state) => state.keys);
   const keyIndex = useKeysStore((state) => state.keyIndex);
   const currentKey = useKeysStore((state) => state.currentKey);
   const addKey = useKeysStore((state) => state.addKey);
   const removeKey = useKeysStore((state) => state.removeKey);
   const selectKey = useKeysStore((state) => state.selectKey);
-  // const operation = useOperationStore((state) => state.operation);
-  // const navigate = useNavigate();
-
-  // useEffect(() => {
-  //   operationStore.persist.rehydrate();
-  //   console.log("KeyStorePage", operationStore.getState().operation, operation);
-  //   if (operation === "signMessage") {
-  //     navigate("/signMessage");
-  //   }
-  // }, [navigate, operation]);
 
   const viewOnlyWalletInputRef = useRef<HTMLInputElement>(null);
 
@@ -73,6 +56,7 @@ function KeyStorePage() {
             <div key={i}>
               {keyIndex === i ? "*" : ""}{" "}
               <button onClick={() => selectKey(i)}>Select</button>
+              {key.viewOnly ? "(Viewable)" : ""}
               {key.name}: {key.publicKey.slice(0, 5)}...
               {key.publicKey.slice(key.publicKey.length - 4)}
               <button onClick={() => removeKey(i)}>Remove key</button>
@@ -81,8 +65,8 @@ function KeyStorePage() {
           ))}
         </ul>
       </div>
-      <div>keyIndex: {keyIndex}</div>
-      <div>currentKey: {JSON.stringify(currentKey)}</div>
+      {/* <div>keyIndex: {keyIndex}</div>
+      <div>currentKey: {JSON.stringify(currentKey)}</div> */}
     </div>
   );
 }

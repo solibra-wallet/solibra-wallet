@@ -1,7 +1,11 @@
 import { useStore } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { createStore, StateCreator } from "zustand/vanilla";
-import { asyncLocalStorage, syncStoreAcrossRuntime } from "./asyncLocalStorage";
+import {
+  asyncLocalStorage,
+  STORE_SCOPE,
+  syncStoreAcrossRuntime,
+} from "./asyncLocalStorage";
 
 export enum OperationStateType {
   IDLE = "IDLE",
@@ -12,10 +16,10 @@ export enum OperationStateType {
 
 export type OperationStoreType = {
   operation: string | null;
+  state: OperationStateType;
   requestPayload: Record<string, any>;
   requestId: string | null;
   requestPublicKey: string | null;
-  state: OperationStateType;
   resultPayload: Record<string, any>;
   setOperation: (params: {
     operation: string;
@@ -28,7 +32,7 @@ export type OperationStoreType = {
     state: OperationStateType;
     resultPayload: Record<string, any>;
   }) => void;
-  reset: () => void;
+  clear: () => void;
 };
 
 const baseOperationStore: StateCreator<
@@ -59,7 +63,7 @@ const baseOperationStore: StateCreator<
         resultPayload: {},
       });
 
-      syncStoreAcrossRuntime();
+      syncStoreAcrossRuntime([STORE_SCOPE.OPERATION]);
     },
     setResult: (params: {
       requestId: string;
@@ -76,9 +80,9 @@ const baseOperationStore: StateCreator<
         resultPayload,
       });
 
-      syncStoreAcrossRuntime();
+      syncStoreAcrossRuntime([STORE_SCOPE.OPERATION]);
     },
-    reset: () => {
+    clear: () => {
       set({
         operation: null,
         requestPayload: {},
@@ -88,7 +92,7 @@ const baseOperationStore: StateCreator<
         resultPayload: {},
       });
 
-      syncStoreAcrossRuntime();
+      syncStoreAcrossRuntime([STORE_SCOPE.OPERATION]);
     },
   }),
   {

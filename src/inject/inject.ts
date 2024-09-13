@@ -1,10 +1,10 @@
 import { PublicKey } from "@solana/web3.js";
-import { CommandSource } from "../command/baseCommandType";
+import { CommandSource } from "../command/base/baseCommandType";
 import { ChangedAccountCommandFactory } from "../command/changedAccountCommand";
-import {
-  ConnectResponseCommandFactory,
-  ConnectResponseCommandType,
-} from "../command/connectResponseCommand";
+// import {
+//   ConnectResponseCommandFactory,
+//   ConnectResponseCommandType,
+// } from "../command/connectResponseCommand";
 import { initialize } from "../wallet-standard/initialize";
 import { SolibraStandardWallet } from "../wallet-standard/wallet";
 import { SolibraWallet } from "./solibraWallet";
@@ -29,16 +29,16 @@ function registerMessageListeners() {
       );
 
       // handle connect response command
-      if (ConnectResponseCommandFactory.isCommand(event.data)) {
-        console.log(
-          "[message] inject script received connect response command",
-          event.data
-        );
-        solibraWallet.setPublicKey(
-          new PublicKey((event.data as ConnectResponseCommandType).publicKey)
-        );
-        return;
-      }
+      // if (ConnectResponseCommandFactory.isCommand(event.data)) {
+      //   console.log(
+      //     "[message] inject script received connect response command",
+      //     event.data
+      //   );
+      //   solibraWallet.setPublicKey(
+      //     new PublicKey((event.data as ConnectResponseCommandType).publicKey)
+      //   );
+      //   return;
+      // }
 
       // handle changed account command
       if (ChangedAccountCommandFactory.isCommand(event.data)) {
@@ -70,9 +70,9 @@ function registerMessageListeners() {
           return;
         }
         solibraWallet.setOperationResult({
-          operationRequestId: command.requestId,
+          requestId: command.requestId,
           operationState: command.state,
-          operationResultPayload: command.resultPayload,
+          resultEncryptedPayload: command.encryptedResultPayload,
         });
         return;
       }

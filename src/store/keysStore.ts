@@ -4,17 +4,21 @@ import { persist, createJSONStorage, StateStorage } from "zustand/middleware";
 import { KeyRecord } from "./keyRecord";
 import { StateCreator } from "zustand";
 import { sendMsgToBackground } from "../content/messageUtils";
-import { RefreshKeysStoreCommandFactory } from "../command/refreshKeysStoreCommand";
-import { CommandSource } from "../command/baseCommandType";
+import { RefreshKeysStoreCommandFactory } from "../command/storeSync/refreshKeysStoreCommand";
+import { CommandSource } from "../command/base/baseCommandType";
 import { sendMsgToContentScript } from "../background/messageUtils";
 import { envStore } from "./envStore";
-import { asyncLocalStorage, syncStoreAcrossRuntime } from "./asyncLocalStorage";
+import {
+  asyncLocalStorage,
+  STORE_SCOPE,
+  syncStoreAcrossRuntime,
+} from "./asyncLocalStorage";
 
 type KeysStoreDataType = {
   keys: KeyRecord[];
   keyIndex: number;
   currentKey: KeyRecord | null;
-  password: string | null;
+  lockKey: string | null;
 };
 
 type KeysStoreActionsType = {
@@ -34,7 +38,7 @@ const baseKeysStore: StateCreator<
     keys: [],
     keyIndex: 0,
     currentKey: null,
-    password: "Qwer1234!",
+    lockKey: "Qwer1234!",
     addKey: (key: KeyRecord) => {
       if (!key) {
         return;
@@ -43,7 +47,7 @@ const baseKeysStore: StateCreator<
       const currentKey = get().currentKey ?? keys[0];
       set({ keys, currentKey });
 
-      syncStoreAcrossRuntime();
+      syncStoreAcrossRuntime([STORE_SCOPE.KEYS]);
     },
     removeKey: (i: number) => {
       const oldKeyIndex = get().keyIndex;
@@ -64,7 +68,7 @@ const baseKeysStore: StateCreator<
       const currentKey = keys[newKeyIndex] ?? null;
       set({ keys, keyIndex: newKeyIndex, currentKey });
 
-      syncStoreAcrossRuntime();
+      syncStoreAcrossRuntime([STORE_SCOPE.KEYS]);
     },
     selectKey: (i: number) => {
       let currentKey = get().keys[i];
@@ -74,7 +78,7 @@ const baseKeysStore: StateCreator<
         currentKey = get().keys[0] ?? null;
         set({ keyIndex: 0, currentKey });
       }
-      syncStoreAcrossRuntime();
+      syncStoreAcrossRuntime([STORE_SCOPE.KEYS]);
     },
   }),
   {

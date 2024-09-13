@@ -1,7 +1,4 @@
-import {
-  base64DecodeToUint8Array,
-  base64EncodeFromUint8Array,
-} from "./encodeDecodeUtils";
+import { bytesToHex, hexToBytes } from "./encodingUtils";
 
 export async function generateKeyPair(): Promise<CryptoKeyPair> {
   const keyPair = await crypto.subtle.generateKey(
@@ -20,19 +17,21 @@ export async function generateKeyPair(): Promise<CryptoKeyPair> {
 
 export async function encryptMessage(
   publicKey: CryptoKey,
-  //message: string
   message: Uint8Array
 ): Promise<string> {
-  const encoder = new TextEncoder();
-  // const data = encoder.encode(message);
-  const encrypted = await crypto.subtle.encrypt(
-    {
-      name: "RSA-OAEP",
-    },
-    publicKey,
-    message
-  );
-  return base64EncodeFromUint8Array(new Uint8Array(encrypted));
+  try {
+    const encrypted = await crypto.subtle.encrypt(
+      {
+        name: "RSA-OAEP",
+      },
+      publicKey,
+      message
+    );
+    return bytesToHex(new Uint8Array(encrypted));
+  } catch (e) {
+    console.error("error encrypting message", e);
+    throw e;
+  }
 }
 
 export async function decryptMessage(
@@ -42,14 +41,14 @@ export async function decryptMessage(
   const decryptedContent = await window.crypto.subtle.decrypt(
     { name: "RSA-OAEP" },
     privateKey,
-    base64DecodeToUint8Array(encryptedMessage).buffer
+    hexToBytes(encryptedMessage).buffer
   );
   // return new TextDecoder().decode(decryptedContent);
   return new Uint8Array(decryptedContent);
 }
 
 export async function exportPublicKey(publicKey: CryptoKey): Promise<string> {
-  return base64EncodeFromUint8Array(
+  return bytesToHex(
     new Uint8Array(await window.crypto.subtle.exportKey("spki", publicKey))
   );
 }
@@ -59,7 +58,7 @@ export async function importPublicKey(
 ): Promise<CryptoKey> {
   return await window.crypto.subtle.importKey(
     "spki",
-    base64DecodeToUint8Array(exportedPublicKey),
+    hexToBytes(exportedPublicKey),
     {
       name: "RSA-OAEP",
       hash: "SHA-256",

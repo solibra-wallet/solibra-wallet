@@ -1,5 +1,8 @@
-import { BaseCommandType, CommandSource } from "./baseCommandType";
-import { OperationRequestCommandType } from "./operationRequestCommandType";
+import { BaseCommandType, CommandSource } from "../base/baseCommandType";
+import {
+  OperationRequestCommandTemplate,
+  OperationRequestCommandType,
+} from "../base/operationRequestCommandType";
 
 const commandMeta = {
   command: "connectRequest",
@@ -11,22 +14,22 @@ export type ConnectRequestCommandType = BaseCommandType &
     command: typeof commandMeta.command;
     uuid: typeof commandMeta.uuid;
     from: CommandSource;
-    operationRequestPayload: {
+    requestPayload: {
       site: string;
-      [key: string]: any;
     };
-    [key: string]: any;
   };
 
 export class ConnectRequestCommandFactory {
-  static isCommand(payload: any): boolean {
+  static isCommand(payload: Record<string, any>): boolean {
     return (
       payload?.command === commandMeta.command &&
       payload?.uuid === commandMeta.uuid
     );
   }
 
-  static tryFrom(payload: any): ConnectRequestCommandType | null {
+  static tryFrom(
+    payload: Record<string, any>
+  ): ConnectRequestCommandType | null {
     if (ConnectRequestCommandFactory.isCommand(payload)) {
       return payload as ConnectRequestCommandType;
     }
@@ -35,24 +38,26 @@ export class ConnectRequestCommandFactory {
 
   static buildNew({
     from,
-    operationRequestId,
-    operationRequestPublicKey,
+    requestId,
+    requestPublicKey,
     site,
   }: {
     from: CommandSource;
-    operationRequestId: string;
-    operationRequestPublicKey: string;
+    requestId: string;
+    requestPublicKey: string;
     site: string;
   }): ConnectRequestCommandType {
     return {
       ...commandMeta,
+      ...OperationRequestCommandTemplate.buildNew({
+        operation: "connect",
+        requestId: requestId,
+        requestPublicKey: requestPublicKey,
+      }),
       from,
-      operation: "connect",
-      operationRequestPayload: {
+      requestPayload: {
         site,
       },
-      operationRequestId,
-      operationRequestPublicKey,
     };
   }
 }

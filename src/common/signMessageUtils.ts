@@ -1,9 +1,10 @@
-import { Keypair } from "@solana/web3.js";
 import nacl from "tweetnacl";
-import { decodeUTF8 } from "tweetnacl-util";
 
-export function signPayload(message: Uint8Array, keyPair: Keypair): Uint8Array {
-  return nacl.sign.detached(message, keyPair.secretKey);
+export function signPayload(
+  message: Uint8Array,
+  secretKey: Uint8Array
+): Uint8Array {
+  return nacl.sign.detached(message, secretKey);
 }
 
 export function verifySignature(

@@ -5,18 +5,12 @@ import {
   useOperationStore,
 } from "../../store/operationStore.ts";
 import { sendMsgToContentScript } from "../utils/messageUtils.ts";
-import {
-  base64DecodeToUint8Array,
-  utf8StringToUint8Array,
-} from "../../common/encodeDecodeUtils.ts";
+import { bytesToHex, hexToBytes } from "../../common/encodingUtils.ts";
 import nacl from "tweetnacl";
-import {
-  encryptMessage,
-  importPublicKey,
-} from "../../common/asymEncryptionUtils.ts";
-import { ForwardToInjectScriptCommandFactory } from "../../command/forwardToInjectScriptCommand.ts";
+import { importPublicKey } from "../../common/asymEncryptionUtils.ts";
+import { ForwardToInjectScriptCommandFactory } from "../../command/transport/forwardToInjectScriptCommand.ts";
 import { OperationResponseCommandFactory } from "../../command/operationResponseCommand.ts";
-import { CommandSource } from "../../command/baseCommandType.ts";
+import { CommandSource } from "../../command/base/baseCommandType.ts";
 
 function SignMessagePage() {
   const operation = useOperationStore((state) => state.operation);
@@ -26,22 +20,15 @@ function SignMessagePage() {
     (state) => state.requestPublicKey
   );
 
-  const setResult = useOperationStore((state) => state.setResult);
+  const resetOperationStore = useOperationStore((state) => state.clear);
 
-  const resetOperationStore = useOperationStore((state) => state.reset);
-
-  const password = useKeysStore((state) => state.password);
-  //   const keys = useKeysStore((state) => state.keys);
-  //   const keyIndex = useKeysStore((state) => state.keyIndex);
+  const lockKey = useKeysStore((state) => state.lockKey);
   const currentKey = useKeysStore((state) => state.currentKey);
-  //   const addKey = useKeysStore((state) => state.addKey);
-  //   const removeKey = useKeysStore((state) => state.removeKey);
-  //   const selectKey = useKeysStore((state) => state.selectKey);
 
   const signPayload =
     operationPayload &&
     operationPayload["signPayload"] &&
-    base64DecodeToUint8Array(operationPayload["signPayload"]);
+    hexToBytes(operationPayload["signPayload"]);
   const decodedPayload = signPayload && new TextDecoder().decode(signPayload);
 
   const rejectHandle = async () => {
@@ -55,44 +42,37 @@ function SignMessagePage() {
     const operationRequestPublicKeyInstance = await importPublicKey(
       operationRequestPublicKey
     );
-    const encryptedReason = await encryptMessage(
-      operationRequestPublicKeyInstance,
-      utf8StringToUint8Array("Rejected")
-    );
 
     resetOperationStore();
+
+    const operationResponseCommand =
+      await OperationResponseCommandFactory.buildNew({
+        from: CommandSource.POPUP_SCRIPT,
+        requestId: operationRequestId,
+        state: OperationStateType.ERROR,
+        resultPayload: { reason: "User rejected." },
+        encryptKey: operationRequestPublicKeyInstance,
+      });
 
     await sendMsgToContentScript(
       ForwardToInjectScriptCommandFactory.buildNew({
         from: CommandSource.POPUP_SCRIPT,
         receivers: [CommandSource.INJECT_SCRIPT],
-        forwardCommand: OperationResponseCommandFactory.buildNew({
-          from: CommandSource.POPUP_SCRIPT,
-          requestId: operationRequestId,
-          state: OperationStateType.ERROR,
-          resultPayload: { reason: encryptedReason },
-        }),
+        forwardCommand: operationResponseCommand,
       })
     );
 
-    window.close();
+    console.log("after sendMsgToContentScript");
   };
 
   const signMessageHandle = async () => {
-    if (!currentKey || !password) {
+    if (!currentKey || !lockKey) {
       throw new Error("wallet not accessable");
       return;
     }
     if (currentKey.viewOnly) {
       throw new Error("view only wallet can not sign message");
     }
-
-    const keypair = await restoreKeypair(currentKey, password);
-
-    const signature: Uint8Array = nacl.sign.detached(
-      signPayload,
-      keypair.secretKey
-    );
 
     if (!operationRequestId) {
       throw new Error("operationRequestId is not set");
@@ -101,33 +81,39 @@ function SignMessagePage() {
       throw new Error("operationRequestPublicKey is not set");
     }
 
+    const keypair = await restoreKeypair(currentKey, lockKey);
+
+    const signature: string = bytesToHex(
+      nacl.sign.detached(signPayload, keypair.secretKey)
+    );
+
     const operationRequestPublicKeyInstance = await importPublicKey(
       operationRequestPublicKey
     );
-    const encryptedSignature = await encryptMessage(
-      operationRequestPublicKeyInstance,
-      signature
-    );
 
-    // setResult({
-    //   requestId: operationRequestId,
-    //   state: OperationStateType.COMPLETED,
-    //   resultPayload: { signature: encryptedSignature },
-    // });
     resetOperationStore();
 
-    await sendMsgToContentScript(
-      ForwardToInjectScriptCommandFactory.buildNew({
-        from: CommandSource.POPUP_SCRIPT,
-        receivers: [CommandSource.INJECT_SCRIPT],
-        forwardCommand: OperationResponseCommandFactory.buildNew({
+    try {
+      const operationResponseCommand =
+        await OperationResponseCommandFactory.buildNew({
           from: CommandSource.POPUP_SCRIPT,
           requestId: operationRequestId,
           state: OperationStateType.COMPLETED,
-          resultPayload: { signature: encryptedSignature },
-        }),
-      })
-    );
+          resultPayload: { signature },
+          encryptKey: operationRequestPublicKeyInstance,
+        });
+
+      await sendMsgToContentScript(
+        ForwardToInjectScriptCommandFactory.buildNew({
+          from: CommandSource.POPUP_SCRIPT,
+          receivers: [CommandSource.INJECT_SCRIPT],
+          forwardCommand: operationResponseCommand,
+        })
+      );
+    } catch (e) {
+      console.error("signMessageHandle error", e);
+      throw e;
+    }
 
     window.close();
   };
@@ -140,6 +126,7 @@ function SignMessagePage() {
       <div className="card">
         <div>Payload to sign:</div>
         <div style={{ border: "1px solid red" }}>{decodedPayload}</div>
+        <div>------------</div>
         <button onClick={rejectHandle}>Reject</button>
         <button onClick={signMessageHandle}>Sign</button>
       </div>
