@@ -8,9 +8,11 @@ import { importPublicKey } from "../../common/asymEncryptionUtils.ts";
 import { ForwardToInjectScriptCommandFactory } from "../../command/transport/forwardToInjectScriptCommand.ts";
 import { OperationResponseCommandFactory } from "../../command/operationResponseCommand.ts";
 import { CommandSource } from "../../command/base/baseCommandType.ts";
+import { useEffect } from "react";
 
 function ConnectPage() {
   const operation = useOperationStore((state) => state.operation);
+  const operationState = useOperationStore((state) => state.state);
   const operationPayload = useOperationStore((state) => state.requestPayload);
   const operationRequestId = useOperationStore((state) => state.requestId);
   const operationRequestPublicKey = useOperationStore(
@@ -19,12 +21,7 @@ function ConnectPage() {
   const clearOperation = useOperationStore((state) => state.clear);
   const currentKey = useKeysStore((state) => state.currentKey);
 
-  // const signPayload =
-  //   operationPayload &&
-  //   operationPayload["signPayload"] &&
-  //   hexToBytes(operationPayload["signPayload"]);
-  // const decodedPayload = signPayload && new TextDecoder().decode(signPayload);
-
+  // handle user reject
   const rejectHandle = async () => {
     if (!operationRequestId) {
       throw new Error("operationRequestId is not set");
@@ -56,6 +53,7 @@ function ConnectPage() {
     window.close();
   };
 
+  // handle user approve connect
   const connectHandle = async () => {
     if (!currentKey) {
       return;
@@ -90,6 +88,29 @@ function ConnectPage() {
 
     window.close();
   };
+
+  // handle window close => close error
+  useEffect(() => {
+    window.addEventListener("beforeunload", function (e) {
+      if (operationState !== OperationStateType.PENDING) {
+        return;
+      }
+      clearOperation();
+
+      sendMsgToContentScript(
+        ForwardToInjectScriptCommandFactory.buildNew({
+          from: CommandSource.POPUP_SCRIPT,
+          receivers: [CommandSource.INJECT_SCRIPT],
+          forwardCommand:
+            OperationResponseCommandFactory.buildNewWithoutResultPayload({
+              from: CommandSource.POPUP_SCRIPT,
+              requestId: operationRequestId!,
+              state: OperationStateType.ERROR,
+            }),
+        })
+      );
+    });
+  });
 
   return (
     <div style={{ width: 400, wordWrap: "break-word" }}>

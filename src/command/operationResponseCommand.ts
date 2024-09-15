@@ -59,6 +59,24 @@ export class OperationResponseCommandFactory {
     return { ...commandMeta, from, requestId, state, encryptedResultPayload };
   }
 
+  static buildNewWithoutResultPayload({
+    from,
+    requestId,
+    state,
+  }: {
+    from: CommandSource;
+    requestId: string;
+    state: OperationStateType;
+  }): OperationResponseCommandType {
+    return {
+      ...commandMeta,
+      from,
+      requestId,
+      state,
+      encryptedResultPayload: "",
+    };
+  }
+
   static async defaultDecrypt(
     encryptedResultPayload: string,
     decryptKey: CryptoKey
