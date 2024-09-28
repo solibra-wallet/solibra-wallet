@@ -26,6 +26,8 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import { bytesToHex, hexToBytes } from "../common/encodingUtils";
 import { OperationResponseCommandFactory } from "../command/operationResponseCommand";
+import { SignAndSendTxRequestCommandFactory } from "../command/operationRequest/signAndSendTxRequestCommand";
+import { SignTxRequestCommandFactory } from "../command/operationRequest/signTxRequestCommand";
 
 export class SolibraWallet implements Solibra {
   #publicKey: PublicKey | null = null;
@@ -79,7 +81,7 @@ export class SolibraWallet implements Solibra {
       })
     );
 
-    for (let i = 0; i < 10000; i++) {
+    for (let i = 0; i < 1000; i++) {
       if (this.#operationRequestId !== operationRequestId) {
         break;
       }
@@ -129,19 +131,152 @@ export class SolibraWallet implements Solibra {
     // throw new Error("Method not implemented.");
   }
 
-  signAndSendTransaction<T extends Transaction | VersionedTransaction>(
+  async signAndSendTransaction<T extends Transaction | VersionedTransaction>(
     transaction: T,
     options?: SendOptions
   ): Promise<{ signature: TransactionSignature }> {
     console.log("SolibraWallet sign and send transaction");
-    throw new Error("Method not implemented.");
+    const operationRequestId = uuidv4();
+    const encryptKeyPair = await generateKeyPair();
+
+    const exportedPublicKey = await exportPublicKey(encryptKeyPair.publicKey);
+
+    this.startWaitOperation({ operationRequestId });
+
+    await sendMsgToContentScript(
+      SignAndSendTxRequestCommandFactory.buildNew({
+        from: CommandSource.INJECT_SCRIPT,
+        encodedTransaction: bytesToHex(transaction.serialize()),
+        sendOptions: options,
+        requestId: operationRequestId,
+        requestPublicKey: exportedPublicKey,
+      })
+    );
+
+    for (let i = 0; i < 2000; i++) {
+      if (this.#operationRequestId !== operationRequestId) {
+        break;
+      }
+
+      if (this.#operationState === OperationStateType.PENDING) {
+        await sleep(200);
+        continue;
+      } else {
+        break;
+      }
+    }
+
+    if (this.#operationRequestId !== operationRequestId) {
+      throw new Error("operationRequestId not match.");
+    }
+
+    if (this.#operationState === OperationStateType.ERROR) {
+      throw new Error("operationState is ERROR.");
+    }
+
+    if (this.#operationState === OperationStateType.PENDING) {
+      throw new Error("operation timeout.");
+    }
+
+    if (this.#operationResultEncryptedPayload === null) {
+      throw new Error("operationResultEncryptedPayload is null.");
+    }
+
+    const operationResultPayload =
+      await OperationResponseCommandFactory.defaultDecrypt(
+        this.#operationResultEncryptedPayload,
+        encryptKeyPair.privateKey
+      );
+
+    if (
+      !operationResultPayload ||
+      !operationResultPayload.signature ||
+      typeof operationResultPayload.signature !== "string"
+    ) {
+      throw new Error("operationResultPayload corrupted.");
+    }
+    const signature = operationResultPayload.signature;
+
+    return {
+      signature: signature,
+    };
   }
 
-  signTransaction<T extends Transaction | VersionedTransaction>(
+  async signTransaction<T extends Transaction | VersionedTransaction>(
     transaction: T
   ): Promise<T> {
     console.log("SolibraWallet sign transaction");
-    throw new Error("Method not implemented.");
+    const operationRequestId = uuidv4();
+    const encryptKeyPair = await generateKeyPair();
+
+    const exportedPublicKey = await exportPublicKey(encryptKeyPair.publicKey);
+
+    this.startWaitOperation({ operationRequestId });
+
+    await sendMsgToContentScript(
+      SignTxRequestCommandFactory.buildNew({
+        from: CommandSource.INJECT_SCRIPT,
+        encodedTransaction: bytesToHex(transaction.serialize()),
+        requestId: operationRequestId,
+        requestPublicKey: exportedPublicKey,
+      })
+    );
+
+    for (let i = 0; i < 2000; i++) {
+      if (this.#operationRequestId !== operationRequestId) {
+        break;
+      }
+
+      if (this.#operationState === OperationStateType.PENDING) {
+        await sleep(200);
+        continue;
+      } else {
+        break;
+      }
+    }
+
+    if (this.#operationRequestId !== operationRequestId) {
+      throw new Error("operationRequestId not match.");
+    }
+
+    if (this.#operationState === OperationStateType.ERROR) {
+      throw new Error("operationState is ERROR.");
+    }
+
+    if (this.#operationState === OperationStateType.PENDING) {
+      throw new Error("operation timeout.");
+    }
+
+    if (this.#operationResultEncryptedPayload === null) {
+      throw new Error("operationResultEncryptedPayload is null.");
+    }
+
+    const operationResultPayload =
+      await OperationResponseCommandFactory.defaultDecrypt(
+        this.#operationResultEncryptedPayload,
+        encryptKeyPair.privateKey
+      );
+
+    if (
+      !operationResultPayload ||
+      !operationResultPayload.encodedSignedTransaction ||
+      typeof operationResultPayload.encodedSignedTransaction !== "string"
+    ) {
+      throw new Error("operationResultPayload corrupted.");
+    }
+
+    try {
+      const signedTransaction = hexToBytes(
+        operationResultPayload.encodedSignedTransaction
+      );
+      try {
+        return VersionedTransaction.deserialize(signedTransaction) as T;
+      } catch (e) {
+        return Transaction.from(signedTransaction) as T;
+      }
+    } catch (e) {
+      throw new Error("Cannot deserialize signed transaction.");
+    }
   }
 
   signAllTransactions<T extends Transaction | VersionedTransaction>(
@@ -169,7 +304,7 @@ export class SolibraWallet implements Solibra {
       })
     );
 
-    for (let i = 0; i < 10000; i++) {
+    for (let i = 0; i < 2000; i++) {
       if (this.#operationRequestId !== operationRequestId) {
         break;
       }
@@ -191,7 +326,7 @@ export class SolibraWallet implements Solibra {
     }
 
     if (this.#operationState === OperationStateType.PENDING) {
-      throw new Error("Connect wallet timeout.");
+      throw new Error("operation timeout.");
     }
 
     if (this.#operationResultEncryptedPayload === null) {

@@ -5,6 +5,8 @@ import { ConnectRequestCommandFactory } from "../command/operationRequest/connec
 import { ForwardToInjectScriptCommandFactory } from "../command/transport/forwardToInjectScriptCommand";
 import { SignMessageRequestCommandFactory } from "../command/operationRequest/signMessageRequestCommand";
 import { sendMsgToBackground, sendMsgToInjectScript } from "./messageUtils";
+import { SignAndSendTxRequestCommandFactory } from "../command/operationRequest/signAndSendTxRequestCommand";
+import { SignTxRequestCommandFactory } from "../command/operationRequest/signTxRequestCommand";
 
 function registerMessageListeners() {
   // declare message listener from background or popup script
@@ -90,6 +92,34 @@ function registerMessageListeners() {
           currentCommand
         );
         // ask background for request sign message, and get back result
+        await sendMsgToBackground({
+          ...currentCommand,
+          left: window.screenLeft + window.outerWidth - 600,
+          top: window.screenTop,
+        });
+        return;
+      }
+
+      if (SignAndSendTxRequestCommandFactory.isCommand(currentCommand)) {
+        console.log(
+          "[message] content script received sign and send tx request command",
+          currentCommand
+        );
+        // ask background for request sign and send tx, and get back result
+        await sendMsgToBackground({
+          ...currentCommand,
+          left: window.screenLeft + window.outerWidth - 600,
+          top: window.screenTop,
+        });
+        return;
+      }
+
+      if (SignTxRequestCommandFactory.isCommand(currentCommand)) {
+        console.log(
+          "[message] content script received sign tx request command",
+          currentCommand
+        );
+        // ask background for request sign tx, and get back result
         await sendMsgToBackground({
           ...currentCommand,
           left: window.screenLeft + window.outerWidth - 600,

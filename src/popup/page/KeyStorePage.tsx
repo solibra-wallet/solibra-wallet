@@ -56,6 +56,11 @@ function KeyStorePage() {
             <div key={i}>
               {keyIndex === i ? "*" : ""}{" "}
               <button onClick={() => selectKey(i)}>Select</button>
+              <button
+                onClick={() => navigator.clipboard.writeText(key.publicKey)}
+              >
+                Copy
+              </button>
               {key.viewOnly ? "(Viewable)" : ""}
               {key.name}: {key.publicKey.slice(0, 5)}...
               {key.publicKey.slice(key.publicKey.length - 4)}

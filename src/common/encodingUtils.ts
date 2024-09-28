@@ -29,3 +29,20 @@ export function bytesToHex(bytes: Uint8Array): string {
 export function hexToBytes(hex: string): Uint8Array {
   return new Uint8Array(Buffer.from(hex, "hex"));
 }
+
+export function concatUint8Arrays(uint8arrays: Uint8Array[]): Uint8Array {
+  const totalLength = uint8arrays.reduce(
+    (total, uint8array) => total + uint8array.byteLength,
+    0
+  );
+
+  const result = new Uint8Array(totalLength);
+
+  let offset = 0;
+  uint8arrays.forEach((uint8array) => {
+    result.set(uint8array, offset);
+    offset += uint8array.byteLength;
+  });
+
+  return result;
+}

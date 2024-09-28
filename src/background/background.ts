@@ -9,8 +9,32 @@ import { envStore } from "../store/envStore";
 import { vanillaKeysStore } from "../store/keysStore";
 import { operationStore } from "../store/operationStore";
 import { sendMsgToContentScript } from "./messageUtils";
+import { SignAndSendTxRequestCommandFactory } from "../command/operationRequest/signAndSendTxRequestCommand";
+import { SignTxRequestCommandFactory } from "../command/operationRequest/signTxRequestCommand";
+import { OperationRequestCommandType } from "../command/base/operationRequestCommandType";
 
 envStore.getState().setEnv("BACKGROUND");
+
+const openPopout = (top: number = 0, left: number = 0) => {
+  chrome.windows.create({
+    url: "popup/popout.html",
+    type: "popup",
+    top: top,
+    left: left,
+    width: 600,
+    height: 800,
+  });
+};
+
+const placeOperation = async (command: OperationRequestCommandType) => {
+  await operationStore.persist.rehydrate();
+  operationStore.getState().setOperation({
+    operation: command.operation,
+    requestPayload: command.requestPayload,
+    requestId: command.requestId,
+    requestPublicKey: command.requestPublicKey,
+  });
+};
 
 function registerMessageListeners() {
   // listen message from content script
@@ -39,27 +63,8 @@ function registerMessageListeners() {
           sendResponse({});
           return;
         }
-        await operationStore.persist.rehydrate();
-        operationStore.getState().setOperation({
-          operation: command.operation,
-          requestPayload: command.requestPayload,
-          requestId: command.requestId,
-          requestPublicKey: command.requestPublicKey,
-        });
-        // await sendMsgToContentScript(
-        //   RefreshOperationStoreCommandFactory.buildNew({
-        //     from: CommandSource.BACKGROUND,
-        //   }),
-        //   true
-        // );
-        chrome.windows.create({
-          url: "popup/popout.html",
-          type: "popup",
-          top: request.top ?? 0,
-          left: request.left ?? 0,
-          width: 600,
-          height: 800,
-        });
+        await placeOperation(command);
+        openPopout(request.top, request.left);
         sendResponse({});
         return;
       }
@@ -74,27 +79,37 @@ function registerMessageListeners() {
           sendResponse({});
           return;
         }
-        await operationStore.persist.rehydrate();
-        operationStore.getState().setOperation({
-          operation: command.operation,
-          requestPayload: command.requestPayload,
-          requestId: command.requestId,
-          requestPublicKey: command.requestPublicKey,
-        });
-        // await sendMsgToContentScript(
-        //   RefreshOperationStoreCommandFactory.buildNew({
-        //     from: CommandSource.BACKGROUND,
-        //   }),
-        //   true
-        // );
-        chrome.windows.create({
-          url: "popup/popout.html",
-          type: "popup",
-          top: request.top ?? 0,
-          left: request.left ?? 0,
-          width: 600,
-          height: 800,
-        });
+        await placeOperation(command);
+        openPopout(request.top, request.left);
+        sendResponse({});
+        return;
+      }
+
+      if (SignAndSendTxRequestCommandFactory.isCommand(request)) {
+        console.log(
+          "[message] background received sign and send tx request",
+          request
+        );
+        const command = SignAndSendTxRequestCommandFactory.tryFrom(request);
+        if (!command) {
+          sendResponse({});
+          return;
+        }
+        await placeOperation(command);
+        openPopout(request.top, request.left);
+        sendResponse({});
+        return;
+      }
+
+      if (SignTxRequestCommandFactory.isCommand(request)) {
+        console.log("[message] background received sign tx request", request);
+        const command = SignTxRequestCommandFactory.tryFrom(request);
+        if (!command) {
+          sendResponse({});
+          return;
+        }
+        await placeOperation(command);
+        openPopout(request.top, request.left);
         sendResponse({});
         return;
       }
