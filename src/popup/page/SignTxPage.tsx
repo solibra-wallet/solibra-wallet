@@ -18,6 +18,7 @@ import {
   TransactionSignature,
 } from "@solana/web3.js";
 import { VersionedTransaction } from "@solana/web3.js";
+import { parseTransaction } from "../../common/transactionUtils.ts";
 
 function SignTxPage() {
   const operation = useOperationStore((state) => state.operation);
@@ -39,15 +40,8 @@ function SignTxPage() {
       hexToBytes(operationPayload["encodedTransaction"])) ??
     null;
 
-  let isLegacyTx = false;
   let tx: Transaction | VersionedTransaction | null = null;
-
-  try {
-    tx = (txPayload && VersionedTransaction.deserialize(txPayload)) ?? null;
-  } catch (e) {
-    isLegacyTx = true;
-    tx = (txPayload && Transaction.from(txPayload)) ?? null;
-  }
+  tx = (txPayload && parseTransaction(txPayload)) ?? null;
 
   // handle user reject
   const rejectHandle = async () => {
@@ -82,6 +76,8 @@ function SignTxPage() {
     );
 
     console.log("after sendMsgToContentScript");
+
+    window.close();
   };
 
   // handle user approve sign message
@@ -107,10 +103,10 @@ function SignTxPage() {
       throw new Error("Cannot deserialize transaction");
     }
 
-    if (isLegacyTx) {
-      (tx as Transaction).sign(keypair);
-    } else {
+    if (tx instanceof VersionedTransaction) {
       (tx as VersionedTransaction).sign([keypair]);
+    } else {
+      (tx as Transaction).sign(keypair);
     }
 
     const operationRequestPublicKeyInstance = await importPublicKey(
@@ -179,7 +175,9 @@ function SignTxPage() {
         <div style={{ border: "1px solid red" }}>{JSON.stringify(tx)}</div>
         <div>------------</div>
         <button onClick={rejectHandle}>Reject</button>
-        <button onClick={approveHandle}>Approve</button>
+        <button onClick={approveHandle} disabled={!!currentKey?.viewOnly}>
+          Approve
+        </button>
       </div>
       <hr />
     </div>

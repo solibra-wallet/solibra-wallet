@@ -66,6 +66,8 @@ function SignMessagePage() {
     );
 
     console.log("after sendMsgToContentScript");
+
+    window.close();
   };
 
   // handle user approve sign message
@@ -155,7 +157,9 @@ function SignMessagePage() {
         <div style={{ border: "1px solid red" }}>{decodedPayload}</div>
         <div>------------</div>
         <button onClick={rejectHandle}>Reject</button>
-        <button onClick={signMessageHandle}>Sign</button>
+        <button onClick={signMessageHandle} disabled={!!currentKey?.viewOnly}>
+          Sign
+        </button>
       </div>
       <hr />
     </div>

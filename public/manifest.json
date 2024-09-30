@@ -2,6 +2,11 @@
   "manifest_version": 3,
   "name": "solibra-wallet",
   "version": "1.0.0",
+  "icons": {
+    "16": "solibra_icon_150.png",
+    "48": "solibra_icon_150.png",
+    "128": "solibra_icon_150.png"
+  },
   "action": {
     "default_popup": "popup/popup.html"
   },

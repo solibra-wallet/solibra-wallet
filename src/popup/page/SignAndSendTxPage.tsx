@@ -18,6 +18,7 @@ import {
   TransactionSignature,
 } from "@solana/web3.js";
 import { VersionedTransaction } from "@solana/web3.js";
+import { parseTransaction } from "../../common/transactionUtils.ts";
 
 function SignAndSendTxPage() {
   const operation = useOperationStore((state) => state.operation);
@@ -39,15 +40,8 @@ function SignAndSendTxPage() {
       hexToBytes(operationPayload["encodedTransaction"])) ??
     null;
 
-  let isLegacyTx = false;
   let tx: Transaction | VersionedTransaction | null = null;
-
-  try {
-    tx = (txPayload && VersionedTransaction.deserialize(txPayload)) ?? null;
-  } catch (e) {
-    isLegacyTx = true;
-    tx = (txPayload && Transaction.from(txPayload)) ?? null;
-  }
+  tx = (txPayload && parseTransaction(txPayload)) ?? null;
 
   const sendOptions = operationPayload["sendOptions"] ?? undefined;
 
@@ -84,6 +78,8 @@ function SignAndSendTxPage() {
     );
 
     console.log("after sendMsgToContentScript");
+
+    window.close();
   };
 
   // handle user approve sign message
@@ -111,15 +107,15 @@ function SignAndSendTxPage() {
 
     let txHash: TransactionSignature | null = null;
 
-    if (isLegacyTx) {
-      txHash = await new web3.Connection(
-        clusterApiUrl("devnet")
-      ).sendTransaction(tx as Transaction, [keypair], sendOptions);
-    } else {
+    if (tx instanceof VersionedTransaction) {
       (tx as VersionedTransaction).sign([keypair]);
       txHash = await new web3.Connection(
         clusterApiUrl("devnet")
       ).sendTransaction(tx as VersionedTransaction, sendOptions);
+    } else {
+      txHash = await new web3.Connection(
+        clusterApiUrl("devnet")
+      ).sendTransaction(tx as Transaction, [keypair], sendOptions);
     }
 
     const operationRequestPublicKeyInstance = await importPublicKey(
@@ -186,7 +182,9 @@ function SignAndSendTxPage() {
         <div style={{ border: "1px solid red" }}>{JSON.stringify(tx)}</div>
         <div>------------</div>
         <button onClick={rejectHandle}>Reject</button>
-        <button onClick={approveHandle}>Approve</button>
+        <button onClick={approveHandle} disabled={!!currentKey?.viewOnly}>
+          Approve
+        </button>
       </div>
       <hr />
     </div>
