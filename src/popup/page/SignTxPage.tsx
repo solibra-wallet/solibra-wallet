@@ -10,7 +10,7 @@ import { importPublicKey } from "../../common/asymEncryptionUtils.ts";
 import { ForwardToInjectScriptCommandFactory } from "../../command/transport/forwardToInjectScriptCommand.ts";
 import { OperationResponseCommandFactory } from "../../command/operationResponseCommand.ts";
 import { CommandSource } from "../../command/base/baseCommandType.ts";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import * as web3 from "@solana/web3.js";
 import {
   clusterApiUrl,
@@ -18,13 +18,23 @@ import {
   TransactionSignature,
 } from "@solana/web3.js";
 import { VersionedTransaction } from "@solana/web3.js";
-import { parseTransaction } from "../../common/transactionUtils.ts";
+import {
+  parseTransaction,
+  simulateTransaction,
+  SimulateTransactionResult,
+} from "../../common/transactionUtils.ts";
+import { SimulateTransactionResultView } from "../components/simulationResult/SimulateTransactionResultView.tsx";
+import { SpinLoading } from "../components/common/SpinLoading.tsx";
+import { configConstants } from "../../common/configConstants.ts";
+import { Box, Button, Divider, Stack, Typography } from "@mui/material";
+import { YSpace } from "../components/common/YSpace.tsx";
 
 function SignTxPage() {
   const operation = useOperationStore((state) => state.operation);
   const operationState = useOperationStore((state) => state.state);
   const operationPayload = useOperationStore((state) => state.requestPayload);
   const operationRequestId = useOperationStore((state) => state.requestId);
+  const site = useOperationStore((state) => state.site);
   const operationRequestPublicKey = useOperationStore(
     (state) => state.requestPublicKey
   );
@@ -34,14 +44,27 @@ function SignTxPage() {
   const lockKey = useKeysStore((state) => state.lockKey);
   const currentKey = useKeysStore((state) => state.currentKey);
 
-  const txPayload: Uint8Array | null =
-    (operationPayload &&
-      operationPayload["encodedTransaction"] &&
-      hexToBytes(operationPayload["encodedTransaction"])) ??
-    null;
+  const [state, setState] = useState<{
+    simulateTransactionResult: SimulateTransactionResult | null;
+  }>({ simulateTransactionResult: null });
 
-  let tx: Transaction | VersionedTransaction | null = null;
-  tx = (txPayload && parseTransaction(txPayload)) ?? null;
+  const connection = useMemo(
+    () =>
+      new web3.Connection("https://rpc-proxy.airic-yu.workers.dev", {
+        commitment: "confirmed",
+      }),
+    []
+  );
+
+  const tx: Transaction | VersionedTransaction | null = useMemo(() => {
+    const txPayload: Uint8Array | null =
+      (operationPayload &&
+        operationPayload["encodedTransaction"] &&
+        hexToBytes(operationPayload["encodedTransaction"])) ??
+      null;
+
+    return (txPayload && parseTransaction(txPayload)) ?? null;
+  }, [operationPayload]);
 
   // handle user reject
   const rejectHandle = async () => {
@@ -165,22 +188,104 @@ function SignTxPage() {
     });
   });
 
+  useEffect(() => {
+    if (!tx || !currentKey?.publicKey) {
+      return;
+    }
+
+    (async () => {
+      const simulateTransactionResult = await simulateTransaction(
+        tx,
+        connection,
+        [currentKey.publicKey]
+      );
+      console.log("simulateTransactionResult", simulateTransactionResult);
+      setState((prev) => ({ ...prev, simulateTransactionResult }));
+    })();
+  }, [connection, currentKey?.publicKey, tx]);
+
+  const simulate = async () => {
+    if (!tx || !currentKey?.publicKey) {
+      return;
+    }
+
+    const simulateTransactionResult = await simulateTransaction(
+      tx,
+      connection,
+      [currentKey.publicKey]
+    );
+    console.log("simulateTransactionResult", simulateTransactionResult);
+    setState((prev) => ({ ...prev, simulateTransactionResult }));
+  };
+
+  const simulationResultView = useMemo(() => {
+    if (currentKey?.publicKey && state.simulateTransactionResult) {
+      return (
+        <SimulateTransactionResultView
+          walletOwner={currentKey.publicKey}
+          result={state.simulateTransactionResult}
+        />
+      );
+    }
+    return <SpinLoading />;
+  }, [currentKey?.publicKey, state.simulateTransactionResult]);
+
   return (
-    <div style={{ width: 400, wordWrap: "break-word" }}>
+    <Box
+      sx={{
+        minWidth: configConstants.popout.width - 100,
+        wordWrap: "break-word",
+      }}
+    >
       <div>Current wallet: {currentKey?.name}</div>
-      <div>------------</div>
-      <h1>Approve Transaction</h1>
-      <div className="card">
-        <div>tx to sign:</div>
-        <div style={{ border: "1px solid red" }}>{JSON.stringify(tx)}</div>
-        <div>------------</div>
-        <button onClick={rejectHandle}>Reject</button>
-        <button onClick={approveHandle} disabled={!!currentKey?.viewOnly}>
+      <Divider />
+      <Typography gutterBottom variant="h6">
+        Site: {site}
+      </Typography>
+      <Divider />
+      <Typography gutterBottom variant="h5">
+        Approve Transaction
+      </Typography>
+
+      <Typography gutterBottom variant="h6">
+        Simulation result:
+      </Typography>
+
+      <Box sx={{ height: 500, overflowY: "scroll" }}>
+        {simulationResultView}
+      </Box>
+      <Divider />
+      <YSpace height={10} />
+      <Stack
+        direction="row"
+        spacing={2}
+        sx={{
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <Button variant="contained" color="info" onClick={simulate}>
+          re-simulate
+        </Button>
+
+        <Divider />
+
+        <Button variant="contained" color="error" onClick={rejectHandle}>
+          Reject
+        </Button>
+
+        <Divider />
+
+        <Button
+          variant="contained"
+          color="error"
+          onClick={approveHandle}
+          disabled={currentKey?.viewOnly}
+        >
           Approve
-        </button>
-      </div>
-      <hr />
-    </div>
+        </Button>
+      </Stack>
+    </Box>
   );
 }
 

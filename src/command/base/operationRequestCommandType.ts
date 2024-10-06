@@ -3,6 +3,7 @@ export type OperationRequestCommandType = {
   requestPayload: Record<string, any>;
   requestId: string;
   requestPublicKey: string;
+  site: string;
 };
 
 export class OperationRequestCommandTemplate {
@@ -11,13 +12,15 @@ export class OperationRequestCommandTemplate {
       payload?.operation &&
       payload?.requestPayload &&
       payload?.requestId &&
-      payload?.requestPublicKey
+      payload?.requestPublicKey &&
+      payload?.site
     ) {
       return {
         operation: payload.operation,
         requestPayload: payload.requestPayload,
         requestId: payload.requestId,
         requestPublicKey: payload.requestPublicKey,
+        site: payload.site,
       };
     }
     return null;
@@ -28,17 +31,20 @@ export class OperationRequestCommandTemplate {
     requestPayload,
     requestId,
     requestPublicKey,
+    site,
   }: {
     operation: string;
     requestPayload?: Record<string, any>;
     requestId: string;
     requestPublicKey: string;
+    site: string;
   }): OperationRequestCommandType {
     return {
       operation,
       requestPayload: requestPayload ?? {},
       requestId,
       requestPublicKey,
+      site,
     };
   }
 }

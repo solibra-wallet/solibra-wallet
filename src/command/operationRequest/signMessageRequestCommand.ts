@@ -39,11 +39,13 @@ export class SignMessageRequestCommandFactory {
     signPayload,
     requestId,
     requestPublicKey,
+    site,
   }: {
     from: CommandSource;
     signPayload: string;
     requestId: string;
     requestPublicKey: string;
+    site: string;
   }): SignMessageRequestCommandType {
     return {
       ...commandMeta,
@@ -51,9 +53,10 @@ export class SignMessageRequestCommandFactory {
         operation: "signMessage",
         requestId: requestId,
         requestPublicKey: requestPublicKey,
+        site,
       }),
       from,
-      requestPayload: { signPayload },
+      requestPayload: { signPayload, site },
     };
   }
 }

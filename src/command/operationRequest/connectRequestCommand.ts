@@ -14,9 +14,7 @@ export type ConnectRequestCommandType = BaseCommandType &
     command: typeof commandMeta.command;
     uuid: typeof commandMeta.uuid;
     from: CommandSource;
-    requestPayload: {
-      site: string;
-    };
+    requestPayload: object;
   };
 
 export class ConnectRequestCommandFactory {
@@ -51,13 +49,12 @@ export class ConnectRequestCommandFactory {
       ...commandMeta,
       ...OperationRequestCommandTemplate.buildNew({
         operation: "connect",
-        requestId: requestId,
-        requestPublicKey: requestPublicKey,
+        requestId,
+        requestPublicKey,
+        site,
       }),
       from,
-      requestPayload: {
-        site,
-      },
+      requestPayload: {},
     };
   }
 }

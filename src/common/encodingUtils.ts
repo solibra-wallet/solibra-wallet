@@ -14,6 +14,10 @@ export function base64Decode(str: string): string {
   return encodeUTF8(decodeBase64(str));
 }
 
+export function base64DecodeToRawBytes(str: string): Uint8Array {
+  return decodeBase64(str);
+}
+
 export function strToBytes(str: string): Uint8Array {
   return new TextEncoder().encode(str);
 }

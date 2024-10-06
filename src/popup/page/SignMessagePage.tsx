@@ -12,12 +12,23 @@ import { ForwardToInjectScriptCommandFactory } from "../../command/transport/for
 import { OperationResponseCommandFactory } from "../../command/operationResponseCommand.ts";
 import { CommandSource } from "../../command/base/baseCommandType.ts";
 import { useEffect } from "react";
+import { configConstants } from "../../common/configConstants.ts";
+import {
+  Divider,
+  Stack,
+  Button,
+  Card,
+  CardContent,
+  Typography,
+} from "@mui/material";
+import { YSpace } from "../components/common/YSpace.tsx";
 
 function SignMessagePage() {
   const operation = useOperationStore((state) => state.operation);
   const operationState = useOperationStore((state) => state.state);
   const operationPayload = useOperationStore((state) => state.requestPayload);
   const operationRequestId = useOperationStore((state) => state.requestId);
+  const site = useOperationStore((state) => state.site);
   const operationRequestPublicKey = useOperationStore(
     (state) => state.requestPublicKey
   );
@@ -148,20 +159,52 @@ function SignMessagePage() {
   });
 
   return (
-    <div style={{ width: 400, wordWrap: "break-word" }}>
+    <div
+      style={{
+        minWidth: configConstants.popout.width - 100,
+        wordWrap: "break-word",
+      }}
+    >
       <div>Current wallet: {currentKey?.name}</div>
-      <div>------------</div>
-      <h1>Sign Message</h1>
-      <div className="card">
-        <div>Payload to sign:</div>
-        <div style={{ border: "1px solid red" }}>{decodedPayload}</div>
-        <div>------------</div>
-        <button onClick={rejectHandle}>Reject</button>
-        <button onClick={signMessageHandle} disabled={!!currentKey?.viewOnly}>
+      <Divider />
+      <Typography gutterBottom variant="h6">
+        Site: {site}
+      </Typography>
+      <Divider />
+      <Typography gutterBottom variant="h5">
+        Sign Message
+      </Typography>
+
+      <div>Payload to sign:</div>
+      <Card>
+        <CardContent>{decodedPayload}</CardContent>
+      </Card>
+
+      <Divider />
+      <YSpace height={10} />
+      <Stack
+        direction="row"
+        spacing={2}
+        sx={{
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <Button variant="contained" color="error" onClick={rejectHandle}>
+          Reject
+        </Button>
+
+        <Divider />
+
+        <Button
+          variant="contained"
+          color="error"
+          onClick={signMessageHandle}
+          disabled={currentKey?.viewOnly}
+        >
           Sign
-        </button>
-      </div>
-      <hr />
+        </Button>
+      </Stack>
     </div>
   );
 }

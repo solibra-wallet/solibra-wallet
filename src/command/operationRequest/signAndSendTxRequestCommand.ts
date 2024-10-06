@@ -42,12 +42,14 @@ export class SignAndSendTxRequestCommandFactory {
     sendOptions,
     requestId,
     requestPublicKey,
+    site,
   }: {
     from: CommandSource;
     encodedTransaction: string;
     sendOptions?: SendOptions;
     requestId: string;
     requestPublicKey: string;
+    site: string;
   }): SignAndSendTxRequestCommandType {
     return {
       ...commandMeta,
@@ -55,9 +57,10 @@ export class SignAndSendTxRequestCommandFactory {
         operation: "signAndSendTx",
         requestId: requestId,
         requestPublicKey: requestPublicKey,
+        site,
       }),
       from,
-      requestPayload: { encodedTransaction, sendOptions },
+      requestPayload: { encodedTransaction, sendOptions, site },
     };
   }
 }

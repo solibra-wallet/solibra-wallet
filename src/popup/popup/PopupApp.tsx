@@ -1,10 +1,15 @@
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
 import "./index.css";
-import "./App.css";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
-import { envStore } from "../../store/envStore.ts";
 import KeyStorePage from "../page/KeyStorePage.tsx";
+
+import { ThemeProvider, createTheme } from "@mui/material/styles";
+import CssBaseline from "@mui/material/CssBaseline";
+
+const darkTheme = createTheme({
+  palette: {
+    mode: "dark",
+  },
+});
 
 function PopupApp() {
   const routes = [
@@ -19,7 +24,12 @@ function PopupApp() {
     initialIndex: 0,
   });
 
-  return <RouterProvider router={router} />;
+  return (
+    <ThemeProvider theme={darkTheme}>
+      <CssBaseline />
+      <RouterProvider router={router} />
+    </ThemeProvider>
+  );
 }
 
 export default PopupApp;

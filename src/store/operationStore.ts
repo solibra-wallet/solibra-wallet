@@ -20,12 +20,14 @@ export type OperationStoreType = {
   requestPayload: Record<string, any>;
   requestId: string | null;
   requestPublicKey: string | null;
+  site: string;
   resultPayload: Record<string, any>;
   setOperation: (params: {
     operation: string;
     requestPayload: Record<string, any>;
     requestId: string;
     requestPublicKey: string;
+    site: string;
   }) => void;
   setResult: (params: {
     requestId: string;
@@ -46,19 +48,23 @@ const baseOperationStore: StateCreator<
     requestId: null,
     requestPublicKey: null,
     state: OperationStateType.IDLE,
+    site: "Unknown",
     resultPayload: {},
     setOperation: (params: {
       operation: string;
       requestPayload: Record<string, any>;
       requestId: string;
       requestPublicKey: string;
+      site: string;
     }) => {
-      const { operation, requestPayload, requestId, requestPublicKey } = params;
+      const { operation, requestPayload, requestId, requestPublicKey, site } =
+        params;
       set({
         operation,
         requestPayload,
         requestId,
         requestPublicKey,
+        site,
         state: OperationStateType.PENDING,
         resultPayload: {},
       });
@@ -88,6 +94,7 @@ const baseOperationStore: StateCreator<
         requestPayload: {},
         requestId: null,
         requestPublicKey: null,
+        site: "Unknown",
         state: OperationStateType.IDLE,
         resultPayload: {},
       });

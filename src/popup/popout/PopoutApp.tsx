@@ -5,6 +5,15 @@ import SignAndSendTxPage from "../page/SignAndSendTxPage";
 import SignMessagePage from "../page/SignMessagePage";
 import SignTxPage from "../page/SignTxPage";
 
+import { ThemeProvider, createTheme } from "@mui/material/styles";
+import CssBaseline from "@mui/material/CssBaseline";
+
+const darkTheme = createTheme({
+  palette: {
+    mode: "dark",
+  },
+});
+
 function PopoutApp() {
   const routes = [
     {
@@ -34,7 +43,12 @@ function PopoutApp() {
     initialIndex: 0,
   });
 
-  return <RouterProvider router={router} />;
+  return (
+    <ThemeProvider theme={darkTheme}>
+      <CssBaseline />
+      <RouterProvider router={router} />
+    </ThemeProvider>
+  );
 }
 
 export default PopoutApp;

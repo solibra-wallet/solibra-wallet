@@ -4,6 +4,7 @@ import {
   SendOptions,
   Transaction,
   TransactionSignature,
+  VersionedMessage,
   VersionedTransaction,
 } from "@solana/web3.js";
 import { Solibra, SolibraEvent } from "../wallet-standard/window";
@@ -28,6 +29,10 @@ import { bytesToHex, hexToBytes } from "../common/encodingUtils";
 import { OperationResponseCommandFactory } from "../command/operationResponseCommand";
 import { SignAndSendTxRequestCommandFactory } from "../command/operationRequest/signAndSendTxRequestCommand";
 import { SignTxRequestCommandFactory } from "../command/operationRequest/signTxRequestCommand";
+import {
+  parseTransaction,
+  parseVersionedMessage,
+} from "../common/transactionUtils";
 
 export class SolibraWallet implements Solibra {
   #publicKey: PublicKey | null = null;
@@ -150,6 +155,7 @@ export class SolibraWallet implements Solibra {
         sendOptions: options,
         requestId: operationRequestId,
         requestPublicKey: exportedPublicKey,
+        site: window.location.origin,
       })
     );
 
@@ -219,6 +225,7 @@ export class SolibraWallet implements Solibra {
         encodedTransaction: bytesToHex(transaction.serialize()),
         requestId: operationRequestId,
         requestPublicKey: exportedPublicKey,
+        site: window.location.origin,
       })
     );
 
@@ -288,6 +295,17 @@ export class SolibraWallet implements Solibra {
 
   async signMessage(message: Uint8Array): Promise<{ signature: Uint8Array }> {
     console.log("SolibraWallet sign message");
+
+    let versionedMessage: VersionedMessage | null = null;
+    try {
+      versionedMessage = parseVersionedMessage(message);
+    } catch (e) {
+      // do nothing
+    }
+    if (versionedMessage != null) {
+      throw new Error("signing VersionedMessage is not supported!");
+    }
+
     const operationRequestId = uuidv4();
     const encryptKeyPair = await generateKeyPair();
 
@@ -301,6 +319,7 @@ export class SolibraWallet implements Solibra {
         signPayload: bytesToHex(message),
         requestId: operationRequestId,
         requestPublicKey: exportedPublicKey,
+        site: window.location.origin,
       })
     );
 

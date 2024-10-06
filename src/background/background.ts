@@ -12,6 +12,7 @@ import { sendMsgToContentScript } from "./messageUtils";
 import { SignAndSendTxRequestCommandFactory } from "../command/operationRequest/signAndSendTxRequestCommand";
 import { SignTxRequestCommandFactory } from "../command/operationRequest/signTxRequestCommand";
 import { OperationRequestCommandType } from "../command/base/operationRequestCommandType";
+import { configConstants } from "../common/configConstants";
 
 envStore.getState().setEnv("BACKGROUND");
 
@@ -21,8 +22,8 @@ const openPopout = (top: number = 0, left: number = 0) => {
     type: "popup",
     top: top,
     left: left,
-    width: 600,
-    height: 800,
+    width: configConstants.popout.width,
+    height: configConstants.popout.height,
   });
 };
 
@@ -33,6 +34,7 @@ const placeOperation = async (command: OperationRequestCommandType) => {
     requestPayload: command.requestPayload,
     requestId: command.requestId,
     requestPublicKey: command.requestPublicKey,
+    site: command.site,
   });
 };
 

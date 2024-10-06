@@ -3,7 +3,7 @@
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
+  color-scheme: dark;
   color: rgba(255, 255, 255, 0.87);
   background-color: #242424;
 
@@ -16,6 +16,13 @@
 body {
   margin: 0;
   display: flex;
-  place-items: center;
-  min-width: 600px;
+  place-items: start center;
+  min-width: 500px;
+  min-height: 100vh;
+}
+
+#root {
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
 }

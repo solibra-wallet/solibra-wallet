@@ -7,6 +7,7 @@ import { SignMessageRequestCommandFactory } from "../command/operationRequest/si
 import { sendMsgToBackground, sendMsgToInjectScript } from "./messageUtils";
 import { SignAndSendTxRequestCommandFactory } from "../command/operationRequest/signAndSendTxRequestCommand";
 import { SignTxRequestCommandFactory } from "../command/operationRequest/signTxRequestCommand";
+import { configConstants } from "../common/configConstants";
 
 function registerMessageListeners() {
   // declare message listener from background or popup script
@@ -80,7 +81,10 @@ function registerMessageListeners() {
         // return;
         await sendMsgToBackground({
           ...currentCommand,
-          left: window.screenLeft + window.outerWidth - 600,
+          left:
+            window.screenLeft +
+            window.outerWidth -
+            configConstants.popout.width,
           top: window.screenTop,
         });
         return;
@@ -94,7 +98,10 @@ function registerMessageListeners() {
         // ask background for request sign message, and get back result
         await sendMsgToBackground({
           ...currentCommand,
-          left: window.screenLeft + window.outerWidth - 600,
+          left:
+            window.screenLeft +
+            window.outerWidth -
+            configConstants.popout.width,
           top: window.screenTop,
         });
         return;
@@ -108,7 +115,10 @@ function registerMessageListeners() {
         // ask background for request sign and send tx, and get back result
         await sendMsgToBackground({
           ...currentCommand,
-          left: window.screenLeft + window.outerWidth - 600,
+          left:
+            window.screenLeft +
+            window.outerWidth -
+            configConstants.popout.width,
           top: window.screenTop,
         });
         return;
@@ -122,7 +132,10 @@ function registerMessageListeners() {
         // ask background for request sign tx, and get back result
         await sendMsgToBackground({
           ...currentCommand,
-          left: window.screenLeft + window.outerWidth - 600,
+          left:
+            window.screenLeft +
+            window.outerWidth -
+            configConstants.popout.width,
           top: window.screenTop,
         });
         return;

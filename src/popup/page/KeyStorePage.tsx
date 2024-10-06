@@ -5,6 +5,9 @@ import {
   generateNewViewOnlyKeyRecord,
 } from "../../store/keyRecord";
 import { useRef } from "react";
+import { configConstants } from "../../common/configConstants.ts";
+import { toAddressShortName } from "../../common/stringUtils.ts";
+import { Typography } from "@mui/material";
 
 function KeyStorePage() {
   const password = useKeysStore((state) => state.lockKey);
@@ -18,8 +21,10 @@ function KeyStorePage() {
   const viewOnlyWalletInputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <div style={{ width: 400, wordWrap: "break-word" }}>
-      <h1>Key store</h1>
+    <div style={{ width: configConstants.popup.width, wordWrap: "break-word" }}>
+      <Typography gutterBottom variant="h5">
+        Key store
+      </Typography>
       <div className="card">
         <button
           onClick={async () =>
@@ -62,8 +67,7 @@ function KeyStorePage() {
                 Copy
               </button>
               {key.viewOnly ? "(Viewable)" : ""}
-              {key.name}: {key.publicKey.slice(0, 5)}...
-              {key.publicKey.slice(key.publicKey.length - 4)}
+              {key.name}: {toAddressShortName(key.publicKey)}
               <button onClick={() => removeKey(i)}>Remove key</button>
               <br />
             </div>

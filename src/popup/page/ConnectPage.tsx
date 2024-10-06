@@ -9,12 +9,16 @@ import { ForwardToInjectScriptCommandFactory } from "../../command/transport/for
 import { OperationResponseCommandFactory } from "../../command/operationResponseCommand.ts";
 import { CommandSource } from "../../command/base/baseCommandType.ts";
 import { useEffect } from "react";
+import { configConstants } from "../../common/configConstants.ts";
+import { Box, Button, Divider, Stack, Typography } from "@mui/material";
+import { YSpace } from "../components/common/YSpace.tsx";
 
 function ConnectPage() {
   const operation = useOperationStore((state) => state.operation);
   const operationState = useOperationStore((state) => state.state);
   const operationPayload = useOperationStore((state) => state.requestPayload);
   const operationRequestId = useOperationStore((state) => state.requestId);
+  const site = useOperationStore((state) => state.site);
   const operationRequestPublicKey = useOperationStore(
     (state) => state.requestPublicKey
   );
@@ -113,18 +117,44 @@ function ConnectPage() {
   });
 
   return (
-    <div style={{ width: 400, wordWrap: "break-word" }}>
+    <Box
+      sx={{
+        minWidth: configConstants.popout.width - 100,
+        wordWrap: "break-word",
+      }}
+    >
       <div>Current wallet: {currentKey?.name}</div>
-      <div>------------</div>
-      <h1>Connect to site</h1>
-      <div className="card">
-        <div>Site: {operationPayload.site}</div>
-        <div>------------</div>
-        <button onClick={rejectHandle}>Reject</button>
-        <button onClick={connectHandle}>Connect</button>
-      </div>
-      <hr />
-    </div>
+      <Divider />
+      <Typography gutterBottom variant="h6">
+        Site: {site}
+      </Typography>
+      <Divider />
+
+      <Typography gutterBottom variant="h5">
+        Connect to site request
+      </Typography>
+
+      <Divider />
+      <YSpace height={10} />
+      <Stack
+        direction="row"
+        spacing={2}
+        sx={{
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <Button variant="contained" color="error" onClick={rejectHandle}>
+          Reject
+        </Button>
+
+        <Divider />
+
+        <Button variant="contained" color="info" onClick={connectHandle}>
+          Connect
+        </Button>
+      </Stack>
+    </Box>
   );
 }
 
