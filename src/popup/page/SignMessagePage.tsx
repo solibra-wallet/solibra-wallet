@@ -198,7 +198,7 @@ function SignMessagePage() {
 
         <Button
           variant="contained"
-          color="error"
+          color="success"
           onClick={signMessageHandle}
           disabled={currentKey?.viewOnly}
         >

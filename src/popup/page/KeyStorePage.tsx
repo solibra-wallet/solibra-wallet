@@ -66,7 +66,7 @@ function KeyStorePage() {
               >
                 Copy
               </button>
-              {key.viewOnly ? "(Viewable)" : ""}
+              {key.viewOnly ? "(View-only)" : ""}
               {key.name}: {toAddressShortName(key.publicKey)}
               <button onClick={() => removeKey(i)}>Remove key</button>
               <br />

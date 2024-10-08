@@ -13,7 +13,7 @@ async function getActiveTab() {
 
 export async function sendMsgToContentScript(
   msg: BaseCommandType,
-  broadcast = false
+  broadcast = true
 ): Promise<any> {
   console.log("[message] send message from background to content script");
   const tabs = broadcast

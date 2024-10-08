@@ -8,7 +8,7 @@ async function getActiveTab() {
     active: true,
     // lastFocusedWindow: true,
   });
-  return tabs[0];
+  return tabs;
 }
 
 // send msg: popup script -> background
@@ -25,18 +25,22 @@ export async function sendMsgToBackground(msg: BaseCommandType) {
 export async function sendMsgToContentScript(msg: BaseCommandType) {
   try {
     console.log("[message] send message from popup script to content script");
-    const tab = await getActiveTab();
-    if (!tab?.id) {
-      console.error("[message] tab id not found");
-      return;
-    }
-    const ret = await chrome.tabs.sendMessage(tab.id, {
-      ...msg,
-      from: CommandSource.POPUP_SCRIPT,
-    });
-    console.log(
-      "[message] receive reply from content script at popup script",
-      ret
+    const tabs = await getActiveTab();
+    return Promise.allSettled(
+      tabs.map(async (tab) => {
+        if (!tab?.id) {
+          console.error("[message] tab id not found");
+          return;
+        }
+        const ret = await chrome.tabs.sendMessage(tab.id, {
+          ...msg,
+          from: CommandSource.POPUP_SCRIPT,
+        });
+        console.log(
+          "[message] receive reply from content script at popup script",
+          ret
+        );
+      })
     );
   } catch (e) {
     console.error("[message] error sending message to content script", e);

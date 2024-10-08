@@ -278,7 +278,7 @@ function SignTxPage() {
 
         <Button
           variant="contained"
-          color="error"
+          color="success"
           onClick={approveHandle}
           disabled={currentKey?.viewOnly}
         >
