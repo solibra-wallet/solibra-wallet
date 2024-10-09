@@ -22,8 +22,9 @@ Guide for development:
 Dev testing
 
 Currently, it is hardcode to use mainnet (Not yet implement RPC config). Can do manual test on:
-- https://devnet.jup.ag/
-- https://drip.haus/
+- https://devnet.jup.ag/ (try sign single tx approval)
+- https://drip.haus/ (try sign message)
+- https://app.kamino.finance/ (try copy address for testing view-only-wallet)
 
 Supported function at 8/10/2024:
 - Generate random wallet
