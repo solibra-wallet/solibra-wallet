@@ -1,4 +1,4 @@
-#solibra-wallet
+# solibra-wallet
 
 install:
 ```
