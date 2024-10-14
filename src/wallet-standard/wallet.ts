@@ -190,12 +190,26 @@ export class SolibraStandardWallet implements Wallet {
     }
   };
 
-  #reconnected = () => {
+  #reconnected = async () => {
     console.log("wallet reconnected");
+    // if wallet is not already connected, then just ignore the wallet app switch account event
+    if (!this.#account) {
+      return;
+    }
+
     if (this.#solibra.publicKey) {
       this.#connected();
     } else {
-      this.#disconnected();
+      try {
+        await this.#solibra.connect();
+      } catch {
+        console.error("failed to reconnect wallet");
+      }
+      if (this.#solibra.publicKey) {
+        this.#connected();
+      } else {
+        this.#disconnected();
+      }
     }
   };
 

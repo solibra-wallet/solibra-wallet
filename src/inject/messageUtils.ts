@@ -38,7 +38,10 @@ export function getExtensionId() {
 
 export async function sendMsgToContentScript(msg: BaseCommandType) {
   // send msg: inject script -> content script
-  console.log("[message] send message from inject script to content script");
+  console.log(
+    "[message] send message from inject script to content script",
+    msg
+  );
   window.postMessage({
     ...msg,
     from: CommandSource.INJECT_SCRIPT,

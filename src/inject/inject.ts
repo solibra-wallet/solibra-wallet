@@ -52,11 +52,9 @@ function registerMessageListeners() {
         }
 
         // update wallet account & reload
-        solibraWallet.setPublicKey(
-          //command.publicKey ? new PublicKey(command.publicKey) : null
-          null
-        );
-        solibraWallet.reloadAccount();
+        solibraWallet.setPublicKey(null);
+        await solibraWallet.reloadAccount();
+
         return;
       }
 

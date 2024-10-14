@@ -1,5 +1,4 @@
 import { CommandSource } from "../command/base/baseCommandType";
-import { ChangedAccountCommandFactory } from "../command/changedAccountCommand";
 import { ConnectRequestCommandFactory } from "../command/operationRequest/connectRequestCommand";
 // import { ConnectResponseCommandFactory } from "../command/connectResponseCommand";
 import { ForwardToInjectScriptCommandFactory } from "../command/transport/forwardToInjectScriptCommand";
