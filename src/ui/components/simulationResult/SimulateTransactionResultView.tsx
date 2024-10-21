@@ -53,7 +53,7 @@ export const SimulateTransactionResultView = ({
         } else if (accountChange.tokenBalance?.token) {
           labels.push(
             <Chip
-              icon={<QuestionMarkIcon />}
+              icon={<TokenIcon />}
               label="Token Account"
               variant="outlined"
               color="warning"
@@ -84,7 +84,7 @@ export const SimulateTransactionResultView = ({
   );
 
   return (
-    <Box sx={{ width: "95%", maxWidth: configConstants.popout.width - 100 }}>
+    <Box sx={{ width: "95%" }}>
       {errorInfoDisplay}
       {resultDisplay}
     </Box>

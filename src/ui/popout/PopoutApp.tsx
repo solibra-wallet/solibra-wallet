@@ -1,9 +1,9 @@
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
-import ConnectPage from "../page/ConnectPage";
-import LoadingOperationScreen from "../page/LoadingOperationScreen";
-import SignAndSendTxPage from "../page/SignAndSendTxPage";
-import SignMessagePage from "../page/SignMessagePage";
-import SignTxPage from "../page/SignTxPage";
+import ConnectPage from "./page/ConnectPage";
+import LoadingOperationScreen from "./page/LoadingOperationScreen";
+import SignAndSendTxPage from "./page/SignAndSendTxPage";
+import SignMessagePage from "./page/SignMessagePage";
+import SignTxPage from "./page/SignTxPage";
 
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";

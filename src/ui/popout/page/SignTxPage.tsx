@@ -1,15 +1,15 @@
-import { useKeysStore } from "../../store/keysStore.ts";
-import { restoreKeypair } from "../../store/keyRecord.ts";
+import { useKeysStore } from "../../../store/keysStore.ts";
+import { restoreKeypair } from "../../../store/keyRecord.ts";
 import {
   OperationStateType,
   useOperationStore,
-} from "../../store/operationStore.ts";
-import { sendMsgToContentScript } from "../utils/messageUtils.ts";
-import { hexToBytes } from "../../common/encodingUtils.ts";
-import { importPublicKey } from "../../common/asymEncryptionUtils.ts";
-import { ForwardToInjectScriptCommandFactory } from "../../command/transport/forwardToInjectScriptCommand.ts";
-import { OperationResponseCommandFactory } from "../../command/operationResponseCommand.ts";
-import { CommandSource } from "../../command/base/baseCommandType.ts";
+} from "../../../store/operationStore.ts";
+import { sendMsgToContentScript } from "../../utils/messageUtils.ts";
+import { bytesToHex, hexToBytes } from "../../../common/encodingUtils.ts";
+import { importPublicKey } from "../../../common/asymEncryptionUtils.ts";
+import { ForwardToInjectScriptCommandFactory } from "../../../command/transport/forwardToInjectScriptCommand.ts";
+import { OperationResponseCommandFactory } from "../../../command/operationResponseCommand.ts";
+import { CommandSource } from "../../../command/base/baseCommandType.ts";
 import { useEffect, useMemo, useState } from "react";
 import * as web3 from "@solana/web3.js";
 import {
@@ -22,13 +22,14 @@ import {
   parseTransaction,
   simulateTransaction,
   SimulateTransactionResult,
-} from "../../common/transactionUtils.ts";
-import { SimulateTransactionResultView } from "../components/simulationResult/SimulateTransactionResultView.tsx";
-import { configConstants } from "../../common/configConstants.ts";
-import { Divider, Stack, Button, Typography, Box } from "@mui/material";
-import { YSpace } from "../components/common/YSpace.tsx";
+} from "../../../common/transactionUtils.ts";
+import { SimulateTransactionResultView } from "../../components/simulationResult/SimulateTransactionResultView.tsx";
+import { SpinLoading } from "../../components/common/SpinLoading.tsx";
+import { configConstants } from "../../../common/configConstants.ts";
+import { Box, Button, Divider, Stack, Typography } from "@mui/material";
+import { YSpace } from "../../components/common/YSpace.tsx";
 
-function SignAndSendTxPage() {
+function SignTxPage() {
   const operation = useOperationStore((state) => state.operation);
   const operationState = useOperationStore((state) => state.state);
   const operationPayload = useOperationStore((state) => state.requestPayload);
@@ -49,7 +50,7 @@ function SignAndSendTxPage() {
 
   const connection = useMemo(
     () =>
-      new web3.Connection("https://rpc-proxy.airic-yu.workers.dev", {
+      new web3.Connection(configConstants.defaultRpc.mainnet, {
         commitment: "confirmed",
       }),
     []
@@ -64,8 +65,6 @@ function SignAndSendTxPage() {
 
     return (txPayload && parseTransaction(txPayload)) ?? null;
   }, [operationPayload]);
-
-  const sendOptions = operationPayload["sendOptions"] ?? undefined;
 
   // handle user reject
   const rejectHandle = async () => {
@@ -127,20 +126,10 @@ function SignAndSendTxPage() {
       throw new Error("Cannot deserialize transaction");
     }
 
-    let txHash: TransactionSignature | null = null;
-
     if (tx instanceof VersionedTransaction) {
       (tx as VersionedTransaction).sign([keypair]);
-      txHash = await connection.sendTransaction(
-        tx as VersionedTransaction,
-        sendOptions
-      );
     } else {
-      txHash = await connection.sendTransaction(
-        tx as Transaction,
-        [keypair],
-        sendOptions
-      );
+      (tx as Transaction).sign(keypair);
     }
 
     const operationRequestPublicKeyInstance = await importPublicKey(
@@ -155,7 +144,9 @@ function SignAndSendTxPage() {
           from: CommandSource.POPUP_SCRIPT,
           requestId: operationRequestId,
           state: OperationStateType.COMPLETED,
-          resultPayload: { signature: txHash },
+          resultPayload: {
+            encodedSignedTransaction: bytesToHex(tx.serialize()),
+          },
           encryptKey: operationRequestPublicKeyInstance,
         });
 
@@ -236,14 +227,17 @@ function SignAndSendTxPage() {
         />
       );
     }
-    return null;
+    return <SpinLoading />;
   }, [currentKey?.publicKey, state.simulateTransactionResult]);
 
   return (
-    <Box
+    <Stack
       sx={{
-        minWidth: configConstants.popout.width - 100,
+        width: "100vw",
+        height: "100vh",
         wordWrap: "break-word",
+        paddingLeft: "10px",
+        paddingRight: "10px",
       }}
     >
       <div>Current wallet: {currentKey?.name}</div>
@@ -253,17 +247,18 @@ function SignAndSendTxPage() {
       </Typography>
       <Divider />
       <Typography gutterBottom variant="h5">
-        Approve and Send Transaction
+        Approve Transaction
       </Typography>
 
       <Typography gutterBottom variant="h6">
         Simulation result:
       </Typography>
-      <Box sx={{ height: 500, overflowY: "scroll" }}>
+
+      <Box sx={{ flexGrow: 1, overflowY: "scroll" }}>
         {simulationResultView}
       </Box>
+
       <Divider />
-      <YSpace height={10} />
 
       <Stack
         direction="row"
@@ -271,31 +266,32 @@ function SignAndSendTxPage() {
         sx={{
           justifyContent: "center",
           alignItems: "center",
+          minHeight: "70px",
         }}
       >
-        <Button variant="contained" color="info" onClick={simulate}>
+        <Button variant="outlined" color="warning" onClick={simulate}>
           re-simulate
         </Button>
 
         <Divider />
 
-        <Button variant="contained" color="error" onClick={rejectHandle}>
+        <Button variant="outlined" color="error" onClick={rejectHandle}>
           Reject
         </Button>
 
         <Divider />
 
         <Button
-          variant="contained"
-          color="success"
+          variant="outlined"
+          color="info"
           onClick={approveHandle}
           disabled={currentKey?.viewOnly}
         >
           Approve
         </Button>
       </Stack>
-    </Box>
+    </Stack>
   );
 }
 
-export default SignAndSendTxPage;
+export default SignTxPage;

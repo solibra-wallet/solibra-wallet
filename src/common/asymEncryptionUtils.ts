@@ -56,7 +56,7 @@ export async function decryptMessage(
   try {
     const outputs: Uint8Array[] = [];
     for (let i = 0; i < inputChunks.length; i++) {
-      const decryptedContent = await window.crypto.subtle.decrypt(
+      const decryptedContent = await crypto.subtle.decrypt(
         { name: "RSA-OAEP" },
         privateKey,
         inputChunks[i].buffer
@@ -72,14 +72,20 @@ export async function decryptMessage(
 
 export async function exportPublicKey(publicKey: CryptoKey): Promise<string> {
   return bytesToHex(
-    new Uint8Array(await window.crypto.subtle.exportKey("spki", publicKey))
+    new Uint8Array(await crypto.subtle.exportKey("spki", publicKey))
+  );
+}
+
+export async function exportPrivateKey(privateKey: CryptoKey): Promise<string> {
+  return bytesToHex(
+    new Uint8Array(await crypto.subtle.exportKey("pkcs8", privateKey))
   );
 }
 
 export async function importPublicKey(
   exportedPublicKey: string
 ): Promise<CryptoKey> {
-  return await window.crypto.subtle.importKey(
+  return await crypto.subtle.importKey(
     "spki",
     hexToBytes(exportedPublicKey),
     {
@@ -88,5 +94,20 @@ export async function importPublicKey(
     },
     true,
     ["encrypt"]
+  );
+}
+
+export async function importPrivateKey(
+  exportedPrivateKey: string
+): Promise<CryptoKey> {
+  return await crypto.subtle.importKey(
+    "pkcs8",
+    hexToBytes(exportedPrivateKey),
+    {
+      name: "RSA-OAEP",
+      hash: "SHA-512",
+    },
+    true,
+    ["decrypt"]
   );
 }

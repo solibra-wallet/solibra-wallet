@@ -8,6 +8,16 @@ import { SignAndSendTxRequestCommandFactory } from "../command/operationRequest/
 import { SignTxRequestCommandFactory } from "../command/operationRequest/signTxRequestCommand";
 import { configConstants } from "../common/configConstants";
 
+function getDefaultPopoutWindowPositionParams() {
+  return {
+    left:
+      window.screenLeft +
+      window.outerWidth -
+      configConstants.popout.windowWidth,
+    top: window.screenTop,
+  };
+}
+
 function registerMessageListeners() {
   // declare message listener from background or popup script
   chrome.runtime.onMessage.addListener(
@@ -60,31 +70,9 @@ function registerMessageListeners() {
       const currentCommand = event.data;
 
       if (ConnectRequestCommandFactory.isCommand(currentCommand)) {
-        // console.log(
-        //   "[message] content script received connect request command",
-        //   currentCommand
-        // );
-        // // ask background for request connect, and get back result
-        // const ret = await sendMsgToBackground(
-        //   ConnectRequestCommandFactory.buildNew({
-        //     from: CommandSource.CONTENT_SCRIPT,
-        //   })
-        // );
-        // // notify inject script to update public key
-        // await sendMsgToInjectScript(
-        //   ConnectResponseCommandFactory.buildNew({
-        //     from: CommandSource.CONTENT_SCRIPT,
-        //     publicKey: ret.publicKey,
-        //   })
-        // );
-        // return;
         await sendMsgToBackground({
           ...currentCommand,
-          left:
-            window.screenLeft +
-            window.outerWidth -
-            configConstants.popout.width,
-          top: window.screenTop,
+          ...getDefaultPopoutWindowPositionParams(),
         });
         return;
       }
@@ -97,11 +85,7 @@ function registerMessageListeners() {
         // ask background for request sign message, and get back result
         await sendMsgToBackground({
           ...currentCommand,
-          left:
-            window.screenLeft +
-            window.outerWidth -
-            configConstants.popout.width,
-          top: window.screenTop,
+          ...getDefaultPopoutWindowPositionParams(),
         });
         return;
       }
@@ -114,11 +98,7 @@ function registerMessageListeners() {
         // ask background for request sign and send tx, and get back result
         await sendMsgToBackground({
           ...currentCommand,
-          left:
-            window.screenLeft +
-            window.outerWidth -
-            configConstants.popout.width,
-          top: window.screenTop,
+          ...getDefaultPopoutWindowPositionParams(),
         });
         return;
       }
@@ -131,11 +111,7 @@ function registerMessageListeners() {
         // ask background for request sign tx, and get back result
         await sendMsgToBackground({
           ...currentCommand,
-          left:
-            window.screenLeft +
-            window.outerWidth -
-            configConstants.popout.width,
-          top: window.screenTop,
+          ...getDefaultPopoutWindowPositionParams(),
         });
         return;
       }

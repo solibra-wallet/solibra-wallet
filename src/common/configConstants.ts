@@ -1,9 +1,16 @@
 export const configConstants = {
   popup: {
-    width: 600,
+    width: 500,
+    height: 600,
   },
   popout: {
-    width: 600,
-    height: 800,
+    windowWidth: 550,
+    windowHeight: 800,
+    width: 500,
+    height: 750,
+  },
+  defaultRpc: {
+    mainnet: "https://rpc-proxy.airic-yu.workers.dev",
+    devnet: "https://devnet-rpc-proxy.airic-yu.workers.dev/",
   },
 };

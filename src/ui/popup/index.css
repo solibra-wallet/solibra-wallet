@@ -17,12 +17,10 @@ body {
   margin: 0;
   display: flex;
   place-items: start center;
-  min-width: 500px;
   min-height: 100vh;
 }
 
 #root {
   margin: 0 auto;
-  padding: 2rem;
   text-align: center;
 }

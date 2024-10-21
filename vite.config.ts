@@ -19,8 +19,8 @@ export default defineConfig({
     target: "esnext",
     rollupOptions: {
       input: {
-        ["popup"]: "src/popup/popup.html",
-        ["popout"]: "src/popup/popout.html",
+        ["popup"]: "src/ui/popup/popup.html",
+        ["popout"]: "src/ui/popout/popout.html",
       },
       output: {
         entryFileNames: "[name].js",

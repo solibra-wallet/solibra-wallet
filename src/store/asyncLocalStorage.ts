@@ -26,6 +26,7 @@ export const asyncLocalStorage: StateStorage = {
 export enum STORE_SCOPE {
   KEYS = "keys",
   OPERATION = "operation",
+  SETTINGS = "settings",
 }
 
 export const syncStoreAcrossRuntime = async (scopes: STORE_SCOPE[]) => {

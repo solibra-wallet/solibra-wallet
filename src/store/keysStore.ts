@@ -3,11 +3,6 @@ import { create, useStore } from "zustand";
 import { persist, createJSONStorage, StateStorage } from "zustand/middleware";
 import { KeyRecord } from "./keyRecord";
 import { StateCreator } from "zustand";
-import { sendMsgToBackground } from "../content/messageUtils";
-import { RefreshKeysStoreCommandFactory } from "../command/storeSync/refreshKeysStoreCommand";
-import { CommandSource } from "../command/base/baseCommandType";
-import { sendMsgToContentScript } from "../background/messageUtils";
-import { envStore } from "./envStore";
 import {
   asyncLocalStorage,
   STORE_SCOPE,

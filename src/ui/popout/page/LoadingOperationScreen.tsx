@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { vanillaKeysStore } from "../../store/keysStore";
-import { useOperationStore } from "../../store/operationStore";
+import { vanillaKeysStore } from "../../../store/keysStore";
+import { useOperationStore } from "../../../store/operationStore";
 
 function LoadingOperationScreen({ children }: { children: React.ReactNode }) {
   const operation = useOperationStore((state) => state.operation);

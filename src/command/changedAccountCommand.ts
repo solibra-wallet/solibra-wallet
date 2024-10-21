@@ -9,7 +9,6 @@ export type ChangedAccountCommandType = BaseCommandType & {
   command: typeof commandMeta.command;
   uuid: typeof commandMeta.uuid;
   from: CommandSource;
-  publicKey: string | null;
 };
 
 export class ChangedAccountCommandFactory {
@@ -34,6 +33,6 @@ export class ChangedAccountCommandFactory {
     from: CommandSource;
     publicKey: string | null;
   }): ChangedAccountCommandType {
-    return { ...commandMeta, from, publicKey };
+    return { ...commandMeta, from };
   }
 }

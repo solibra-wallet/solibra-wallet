@@ -3,7 +3,6 @@ import { ChangedAccountCommandFactory } from "../command/changedAccountCommand";
 import { ConnectRequestCommandFactory } from "../command/operationRequest/connectRequestCommand";
 import { ForwardToInjectScriptCommandFactory } from "../command/transport/forwardToInjectScriptCommand";
 import { RefreshKeysStoreCommandFactory } from "../command/storeSync/refreshKeysStoreCommand";
-import { RefreshOperationStoreCommandFactory } from "../command/storeSync/refreshOperationStoreCommand";
 import { SignMessageRequestCommandFactory } from "../command/operationRequest/signMessageRequestCommand";
 import { envStore } from "../store/envStore";
 import { vanillaKeysStore } from "../store/keysStore";
@@ -13,21 +12,32 @@ import { SignAndSendTxRequestCommandFactory } from "../command/operationRequest/
 import { SignTxRequestCommandFactory } from "../command/operationRequest/signTxRequestCommand";
 import { OperationRequestCommandType } from "../command/base/operationRequestCommandType";
 import { configConstants } from "../common/configConstants";
+import { settingsStore } from "../store/settingsStore";
+import {
+  decryptMessage,
+  encryptMessage,
+  exportPrivateKey,
+  exportPublicKey,
+  generateKeyPair,
+  importPrivateKey,
+  importPublicKey,
+} from "../common/asymEncryptionUtils";
+import { bytesToStr, strToBytes } from "../common/encodingUtils";
 
 envStore.getState().setEnv("BACKGROUND");
 
-const openPopout = (top: number = 0, left: number = 0) => {
+function openPopout(top: number = 0, left: number = 0) {
   chrome.windows.create({
-    url: "popup/popout.html",
+    url: "ui/popout/popout.html",
     type: "popup",
     top: top,
     left: left,
-    width: configConstants.popout.width,
-    height: configConstants.popout.height,
+    width: configConstants.popout.windowWidth,
+    height: configConstants.popout.windowHeight,
   });
-};
+}
 
-const placeOperation = async (command: OperationRequestCommandType) => {
+async function placeOperation(command: OperationRequestCommandType) {
   await operationStore.persist.rehydrate();
   operationStore.getState().setOperation({
     operation: command.operation,
@@ -36,7 +46,7 @@ const placeOperation = async (command: OperationRequestCommandType) => {
     requestPublicKey: command.requestPublicKey,
     site: command.site,
   });
-};
+}
 
 function registerMessageListeners() {
   // listen message from content script
@@ -167,5 +177,20 @@ function registerMessageListeners() {
     }
   );
 }
+
+chrome.runtime.onInstalled.addListener(async () => {
+  await settingsStore.persist.rehydrate();
+  console.log("chrome.runtime.onInstalled", settingsStore.getState());
+  if (!settingsStore.getState().isDeviceKeysInitialized()) {
+    const encryptKeyPair = await generateKeyPair();
+    const exportedPublicKey = await exportPublicKey(encryptKeyPair.publicKey);
+    const exportedPrivateKey = await exportPrivateKey(
+      encryptKeyPair.privateKey
+    );
+    settingsStore
+      .getState()
+      .setDeviceKeys(exportedPrivateKey, exportedPublicKey);
+  }
+});
 
 registerMessageListeners();

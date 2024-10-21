@@ -8,7 +8,7 @@
     "128": "solibra_icon_150.png"
   },
   "action": {
-    "default_popup": "popup/popup.html"
+    "default_popup": "ui/popup/popup.html"
   },
   "background": {
     "service_worker": "background.js",

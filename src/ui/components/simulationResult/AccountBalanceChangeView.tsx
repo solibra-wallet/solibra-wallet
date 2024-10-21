@@ -5,6 +5,7 @@ import {
   Chip,
   Container,
   Divider,
+  IconButton,
   Tooltip,
   Typography,
 } from "@mui/material";
@@ -14,6 +15,7 @@ import { AccountChangeType } from "../../../common/transactionUtils";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { toAddressShortName } from "../../../common/stringUtils";
 import { XSpace } from "../common/XSpace";
+import { YSpace } from "../common/YSpace";
 
 export const AccountBalanceChangeView = ({
   walletOwner,
@@ -33,11 +35,39 @@ export const AccountBalanceChangeView = ({
           variant="body2"
           sx={{ color: "text.secondary", textAlign: "left" }}
         >
-          <div>SOL change: {accountBalanceChange.solBalance.balanceDiff}</div>
-          <Box component={"div"} sx={{ display: "flex", alignItems: "center" }}>
-            {accountBalanceChange.solBalance.beforeBalance}{" "}
-            {<ArrowForwardIcon />}{" "}
-            {accountBalanceChange.solBalance.afterBalance}
+          <Box
+            component={"div"}
+            sx={{
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "center",
+              ml: "50px",
+            }}
+          >
+            <Box>
+              SOL : <XSpace width={5} />{" "}
+            </Box>
+
+            <Box
+              sx={{
+                fontWeight: 800,
+                color: accountBalanceChange.solBalance.balanceDiff.startsWith(
+                  "-"
+                )
+                  ? "#a84032"
+                  : "#32a852",
+              }}
+            >
+              {accountBalanceChange.solBalance.balanceDiff}
+            </Box>
+
+            <Box sx={{ flexGrow: 1 }}></Box>
+
+            <Box sx={{ display: "flex" }}>
+              {" ( "} {accountBalanceChange.solBalance.beforeBalance}{" "}
+              {<ArrowForwardIcon sx={{ ml: "5px", mr: "5px" }} />}{" "}
+              {accountBalanceChange.solBalance.afterBalance} {" ) "}
+            </Box>
           </Box>
         </Typography>
       </>
@@ -79,28 +109,60 @@ export const AccountBalanceChangeView = ({
             <Tooltip title={accountBalanceChange.tokenBalance.token.mint}>
               <Box
                 component={"div"}
-                sx={{ display: "flex", alignItems: "center" }}
+                sx={{ display: "flex", alignItems: "center", ml: "30px" }}
               >
                 {tokenLogoIcon}
                 <Box sx={{ display: "inline-block", fontSize: 20 }}>
                   {accountBalanceChange.tokenBalance.token.symbol}
                 </Box>
+                <IconButton
+                  aria-label="copy"
+                  onClick={() => {
+                    if (accountBalanceChange?.tokenBalance?.token.mint) {
+                      navigator.clipboard.writeText(
+                        accountBalanceChange.tokenBalance.token.mint
+                      );
+                    }
+                  }}
+                >
+                  <ContentCopyIcon />
+                </IconButton>
               </Box>
             </Tooltip>
           </div>
           {accountBalanceChange.tokenBalance.token.mint !==
             "So11111111111111111111111111111111111111112" && (
             <>
-              <div>
-                Token change: {accountBalanceChange.tokenBalance.balanceDiff}
-              </div>
               <Box
                 component={"div"}
-                sx={{ display: "flex", alignItems: "center" }}
+                sx={{
+                  display: "flex",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  ml: "50px",
+                }}
               >
-                {accountBalanceChange.tokenBalance.beforeBalance}{" "}
-                {<ArrowForwardIcon />}{" "}
-                {accountBalanceChange.tokenBalance.afterBalance}
+                <Box
+                  sx={{
+                    fontWeight: 800,
+                    color:
+                      accountBalanceChange.tokenBalance.balanceDiff.startsWith(
+                        "-"
+                      )
+                        ? "#a84032"
+                        : "#32a852",
+                  }}
+                >
+                  {accountBalanceChange.tokenBalance.balanceDiff}
+                </Box>
+
+                <Box sx={{ flexGrow: 1 }}></Box>
+
+                <Box sx={{ display: "flex" }}>
+                  {" ( "} {accountBalanceChange.tokenBalance.beforeBalance}{" "}
+                  {<ArrowForwardIcon sx={{ ml: "5px", mr: "5px" }} />}{" "}
+                  {accountBalanceChange.tokenBalance.afterBalance} {" ) "}
+                </Box>
               </Box>
             </>
           )}
@@ -124,22 +186,49 @@ export const AccountBalanceChangeView = ({
                 {accountLabels}
                 <XSpace width={"1em"} />
                 {toAddressShortName(accountBalanceChange.publicKey)}
+                <IconButton
+                  aria-label="copy"
+                  onClick={() => {
+                    navigator.clipboard.writeText(
+                      accountBalanceChange.publicKey
+                    );
+                  }}
+                >
+                  <ContentCopyIcon />
+                </IconButton>
               </Box>
+
+              <YSpace height={"0.5em"} />
 
               {accountBalanceChange.tokenBalance?.owner &&
                 accountBalanceChange.tokenBalance.owner !== walletOwner && (
                   <Tooltip title={accountBalanceChange.tokenBalance.owner}>
                     <Box>
-                      Owner:
-                      <XSpace width="2em" />
+                      Owner :
+                      <XSpace width="5px" />
                       {toAddressShortName(
                         accountBalanceChange.tokenBalance.owner
                       )}
+                      <IconButton
+                        aria-label="copy"
+                        onClick={() => {
+                          if (accountBalanceChange.tokenBalance?.owner) {
+                            navigator.clipboard.writeText(
+                              accountBalanceChange.tokenBalance.owner
+                            );
+                          }
+                        }}
+                      >
+                        <ContentCopyIcon />
+                      </IconButton>
                     </Box>
                   </Tooltip>
                 )}
             </Typography>
           </Tooltip>
+
+          <Divider />
+
           <Typography
             variant="body2"
             sx={{ color: "text.secondary", textAlign: "left" }}

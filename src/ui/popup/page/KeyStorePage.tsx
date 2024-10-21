@@ -1,13 +1,13 @@
-import { useKeysStore } from "../../store/keysStore.ts";
+import { useKeysStore } from "../../../store/keysStore.ts";
 import {
   generateNewKeypair,
   generateNewKeyRecord,
   generateNewViewOnlyKeyRecord,
-} from "../../store/keyRecord";
+} from "../../../store/keyRecord.ts";
 import { useRef } from "react";
-import { configConstants } from "../../common/configConstants.ts";
-import { toAddressShortName } from "../../common/stringUtils.ts";
-import { Typography } from "@mui/material";
+import { configConstants } from "../../../common/configConstants.ts";
+import { toAddressShortName } from "../../../common/stringUtils.ts";
+import { Box, Typography } from "@mui/material";
 
 function KeyStorePage() {
   const password = useKeysStore((state) => state.lockKey);
@@ -21,7 +21,7 @@ function KeyStorePage() {
   const viewOnlyWalletInputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <div style={{ width: configConstants.popup.width, wordWrap: "break-word" }}>
+    <Box>
       <Typography gutterBottom variant="h5">
         Key store
       </Typography>
@@ -76,7 +76,7 @@ function KeyStorePage() {
       </div>
       {/* <div>keyIndex: {keyIndex}</div>
       <div>currentKey: {JSON.stringify(currentKey)}</div> */}
-    </div>
+    </Box>
   );
 }
 
