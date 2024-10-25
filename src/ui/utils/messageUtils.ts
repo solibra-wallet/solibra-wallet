@@ -11,6 +11,11 @@ async function getActiveTab() {
   return tabs;
 }
 
+async function getAllTab() {
+  const tabs = await chrome.tabs.query({});
+  return tabs;
+}
+
 // send msg: popup script -> background
 export async function sendMsgToBackground(msg: BaseCommandType) {
   console.log("[message] send message from popup script to background");
@@ -22,10 +27,13 @@ export async function sendMsgToBackground(msg: BaseCommandType) {
 }
 
 // send msg: popup script -> content script
-export async function sendMsgToContentScript(msg: BaseCommandType) {
+export async function sendMsgToContentScript(
+  msg: BaseCommandType,
+  broadcast = true
+) {
   try {
     console.log("[message] send message from popup script to content script");
-    const tabs = await getActiveTab();
+    const tabs = broadcast ? await getAllTab() : await getActiveTab();
     return Promise.allSettled(
       tabs.map(async (tab) => {
         if (!tab?.id) {

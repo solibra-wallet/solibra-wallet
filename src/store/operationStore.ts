@@ -6,6 +6,8 @@ import {
   STORE_SCOPE,
   syncStoreAcrossRuntime,
 } from "./asyncLocalStorage";
+import { encryptMessage } from "../common/asymEncryptionUtils";
+import { strToBytes } from "../common/encodingUtils";
 
 export enum OperationStateType {
   IDLE = "IDLE",
@@ -14,28 +16,94 @@ export enum OperationStateType {
   ERROR = "ERROR",
 }
 
-export type OperationStoreType = {
-  operation: string | null;
-  state: OperationStateType;
+export type OperationRecord = {
+  operation: string;
   requestPayload: Record<string, any>;
-  requestId: string | null;
-  requestPublicKey: string | null;
+  requestId: string;
+  requestPublicKey: string;
   site: string;
-  resultPayload: Record<string, any>;
-  setOperation: (params: {
-    operation: string;
-    requestPayload: Record<string, any>;
-    requestId: string;
-    requestPublicKey: string;
-    site: string;
-  }) => void;
-  setResult: (params: {
-    requestId: string;
-    state: OperationStateType;
-    resultPayload: Record<string, any>;
-  }) => void;
+  state: OperationStateType;
+  encryptedResultPayload: string | null;
+  startTime: number;
+  expireTime: number;
+};
+
+export function buildDefaultOperationRecord({
+  operation,
+  requestPayload,
+  requestId,
+  requestPublicKey,
+  site,
+}: {
+  operation: string;
+  requestPayload: Record<string, any>;
+  requestId: string;
+  requestPublicKey: string;
+  site: string;
+}): OperationRecord {
+  return {
+    operation,
+    requestPayload,
+    requestId,
+    requestPublicKey,
+    site,
+    state: OperationStateType.PENDING,
+    encryptedResultPayload: null,
+    startTime: Date.now(),
+    expireTime: Date.now() + 1000 * 60 * 3,
+  };
+}
+
+export async function encryptOperationResultPayload(
+  resultPayload: Record<string, any>,
+  encryptKey: CryptoKey
+): Promise<string> {
+  return await encryptMessage(
+    encryptKey,
+    strToBytes(JSON.stringify(resultPayload))
+  );
+}
+
+export type OperationStoreType = {
+  operationRecords: Record<string, OperationRecord>;
+  appendOperationRecord: (record: OperationRecord, tick: number) => void;
+  getOperationRecord: (
+    requestId: string,
+    tick: number
+  ) => OperationRecord | null;
+  removeOperationRecord: (requestId: string, tick: number) => void;
+  setOperationResult: (
+    requestId: string,
+    state: OperationStateType,
+    encryptedResultPayload: string | null,
+    tick: number
+  ) => void;
+  _removeExpiredOperationRecords: (tick: number) => boolean;
   clear: () => void;
 };
+
+// export type OperationStoreType = {
+//   operation: string | null;
+//   state: OperationStateType;
+//   requestPayload: Record<string, any>;
+//   requestId: string | null;
+//   requestPublicKey: string | null;
+//   site: string;
+//   resultPayload: Record<string, any>;
+//   setOperation: (params: {
+//     operation: string;
+//     requestPayload: Record<string, any>;
+//     requestId: string;
+//     requestPublicKey: string;
+//     site: string;
+//   }) => void;
+//   setResult: (params: {
+//     requestId: string;
+//     state: OperationStateType;
+//     resultPayload: Record<string, any>;
+//   }) => void;
+//   clear: () => void;
+// };
 
 const baseOperationStore: StateCreator<
   OperationStoreType,
@@ -43,63 +111,106 @@ const baseOperationStore: StateCreator<
   [["zustand/persist", unknown]]
 > = persist(
   (set, get) => ({
-    operation: null,
-    requestPayload: {},
-    requestId: null,
-    requestPublicKey: null,
-    state: OperationStateType.IDLE,
-    site: "Unknown",
-    resultPayload: {},
-    setOperation: (params: {
-      operation: string;
-      requestPayload: Record<string, any>;
-      requestId: string;
-      requestPublicKey: string;
-      site: string;
-    }) => {
-      const { operation, requestPayload, requestId, requestPublicKey, site } =
-        params;
-      set({
-        operation,
-        requestPayload,
-        requestId,
-        requestPublicKey,
-        site,
-        state: OperationStateType.PENDING,
-        resultPayload: {},
-      });
+    operationRecords: {},
+    appendOperationRecord: (record: OperationRecord, tick: number): void => {
+      const removedExpiredRecords = get()._removeExpiredOperationRecords(tick);
+      const { operationRecords } = get();
 
-      syncStoreAcrossRuntime([STORE_SCOPE.OPERATION]);
+      if (operationRecords[record.requestId]) {
+        if (removedExpiredRecords) {
+          syncStoreAcrossRuntime([STORE_SCOPE.OPERATION]);
+        }
+      } else {
+        operationRecords[record.requestId] = record;
+
+        set({
+          operationRecords,
+        });
+        syncStoreAcrossRuntime([STORE_SCOPE.OPERATION]);
+      }
     },
-    setResult: (params: {
-      requestId: string;
-      state: OperationStateType;
-      resultPayload: Record<string, any>;
-    }) => {
-      const { state, resultPayload, requestId } = params;
-      set({
-        operation: null,
-        requestPayload: {},
-        requestId,
-        requestPublicKey: null,
-        state,
-        resultPayload,
-      });
+    getOperationRecord: (
+      requestId: string,
+      tick: number
+    ): OperationRecord | null => {
+      const removedExpiredRecords = get()._removeExpiredOperationRecords(tick);
+      const { operationRecords } = get();
+      if (!operationRecords[requestId]) {
+        return null;
+      }
 
-      syncStoreAcrossRuntime([STORE_SCOPE.OPERATION]);
+      if (removedExpiredRecords) {
+        syncStoreAcrossRuntime([STORE_SCOPE.OPERATION]);
+      }
+
+      return operationRecords[requestId];
     },
-    clear: () => {
-      set({
-        operation: null,
-        requestPayload: {},
-        requestId: null,
-        requestPublicKey: null,
-        site: "Unknown",
-        state: OperationStateType.IDLE,
-        resultPayload: {},
-      });
+    removeOperationRecord: (requestId: string, tick: number): void => {
+      const removedExpiredRecords = get()._removeExpiredOperationRecords(tick);
+      const { operationRecords } = get();
+      if (operationRecords[requestId]) {
+        delete operationRecords[requestId];
+        syncStoreAcrossRuntime([STORE_SCOPE.OPERATION]);
+      } else if (removedExpiredRecords) {
+        syncStoreAcrossRuntime([STORE_SCOPE.OPERATION]);
+      }
+    },
+    setOperationResult: (
+      requestId: string,
+      state: OperationStateType,
+      encryptedResultPayload: string | null,
+      tick: number
+    ): void => {
+      const removedExpiredRecords = get()._removeExpiredOperationRecords(tick);
+      const { operationRecords } = get();
+      if (operationRecords[requestId]) {
+        operationRecords[requestId] = {
+          ...operationRecords[requestId],
+          state,
+          encryptedResultPayload,
+        };
 
-      syncStoreAcrossRuntime([STORE_SCOPE.OPERATION]);
+        set({
+          operationRecords,
+        });
+        syncStoreAcrossRuntime([STORE_SCOPE.OPERATION]);
+      } else if (removedExpiredRecords) {
+        syncStoreAcrossRuntime([STORE_SCOPE.OPERATION]);
+      }
+    },
+    _removeExpiredOperationRecords: (tick: number): boolean => {
+      const { operationRecords } = get();
+      const removeRequestIds: string[] = [];
+      for (const key in operationRecords) {
+        if (
+          operationRecords[key].expireTime &&
+          operationRecords[key].expireTime <= tick
+        ) {
+          removeRequestIds.push(key);
+        }
+      }
+
+      if (removeRequestIds.length > 0) {
+        for (const requestId of removeRequestIds) {
+          delete operationRecords[requestId];
+        }
+
+        set({
+          operationRecords,
+        });
+
+        return true;
+      }
+      return false;
+    },
+    clear: (): void => {
+      if (Object.keys(get().operationRecords).length > 0) {
+        set({
+          operationRecords: {},
+        });
+
+        syncStoreAcrossRuntime([STORE_SCOPE.OPERATION]);
+      }
     },
   }),
   {

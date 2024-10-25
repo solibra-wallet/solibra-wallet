@@ -1,5 +1,7 @@
 import { useKeysStore } from "../../../store/keysStore.ts";
 import {
+  encryptOperationResultPayload,
+  OperationRecord,
   OperationStateType,
   useOperationStore,
 } from "../../../store/operationStore.ts";
@@ -9,20 +11,19 @@ import { ForwardToInjectScriptCommandFactory } from "../../../command/transport/
 import { OperationResponseCommandFactory } from "../../../command/operationResponseCommand.ts";
 import { CommandSource } from "../../../command/base/baseCommandType.ts";
 import { useEffect } from "react";
-import { configConstants } from "../../../common/configConstants.ts";
 import { Box, Button, Divider, Stack, Typography } from "@mui/material";
-import { YSpace } from "../../components/common/YSpace.tsx";
+import { useSearchParams } from "react-router-dom";
 
 function ConnectPage() {
-  const operation = useOperationStore((state) => state.operation);
-  const operationState = useOperationStore((state) => state.state);
-  const operationPayload = useOperationStore((state) => state.requestPayload);
-  const operationRequestId = useOperationStore((state) => state.requestId);
-  const site = useOperationStore((state) => state.site);
-  const operationRequestPublicKey = useOperationStore(
-    (state) => state.requestPublicKey
-  );
-  const clearOperation = useOperationStore((state) => state.clear);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const operationRequestId = searchParams.get("requestId");
+  const getOperationRecord = useOperationStore((state) => state.getOperationRecord);
+
+  const operationRecord :  OperationRecord | null = operationRequestId ? getOperationRecord(operationRequestId, Date.now()) : null;
+  const operationState = operationRecord?.state ?? null;
+  const site =   operationRecord?.site ?? null;
+  const operationRequestPublicKey = operationRecord?.requestPublicKey ?? null;
+  const setOperationResult = useOperationStore((state) => state.setOperationResult);
   const currentKey = useKeysStore((state) => state.currentKey);
 
   // handle user reject
@@ -38,7 +39,11 @@ function ConnectPage() {
       operationRequestPublicKey
     );
 
-    clearOperation();
+    const encryptedResultPayload = await encryptOperationResultPayload(
+      { reason: "User rejected." },
+      operationRequestPublicKeyInstance
+    )
+    setOperationResult(operationRequestId, OperationStateType.ERROR, encryptedResultPayload, Date.now());
 
     await sendMsgToContentScript(
       ForwardToInjectScriptCommandFactory.buildNew({
@@ -48,8 +53,7 @@ function ConnectPage() {
           from: CommandSource.POPUP_SCRIPT,
           requestId: operationRequestId,
           state: OperationStateType.ERROR,
-          resultPayload: { reason: "User rejected." },
-          encryptKey: operationRequestPublicKeyInstance,
+          encryptedResultPayload
         }),
       })
     );
@@ -74,7 +78,11 @@ function ConnectPage() {
       operationRequestPublicKey
     );
 
-    clearOperation();
+    const encryptedResultPayload = await encryptOperationResultPayload(
+      { publicKey: currentKey.publicKey },
+      operationRequestPublicKeyInstance
+    )
+    setOperationResult(operationRequestId, OperationStateType.COMPLETED, encryptedResultPayload, Date.now());
 
     await sendMsgToContentScript(
       ForwardToInjectScriptCommandFactory.buildNew({
@@ -84,8 +92,7 @@ function ConnectPage() {
           from: CommandSource.POPUP_SCRIPT,
           requestId: operationRequestId,
           state: OperationStateType.COMPLETED,
-          resultPayload: { publicKey: currentKey.publicKey },
-          encryptKey: operationRequestPublicKeyInstance,
+          encryptedResultPayload
         }),
       })
     );
@@ -95,11 +102,14 @@ function ConnectPage() {
 
   // handle window close => close error
   useEffect(() => {
-    window.addEventListener("beforeunload", function (e) {
+    window.addEventListener("beforeunload", function () {
       if (operationState !== OperationStateType.PENDING) {
         return;
       }
-      clearOperation();
+
+      if (operationRequestId) {
+        setOperationResult(operationRequestId, OperationStateType.ERROR, null, Date.now());
+      }
 
       sendMsgToContentScript(
         ForwardToInjectScriptCommandFactory.buildNew({

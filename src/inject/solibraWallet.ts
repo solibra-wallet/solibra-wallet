@@ -1,5 +1,4 @@
 import {
-  Keypair,
   PublicKey,
   SendOptions,
   Transaction,
@@ -20,7 +19,6 @@ import { sleep } from "../common/sleep";
 import { SignMessageRequestCommandFactory } from "../command/operationRequest/signMessageRequestCommand";
 import { OperationStateType } from "../store/operationStore";
 import {
-  decryptMessage,
   exportPublicKey,
   generateKeyPair,
 } from "../common/asymEncryptionUtils";
@@ -29,10 +27,7 @@ import { bytesToHex, hexToBytes } from "../common/encodingUtils";
 import { OperationResponseCommandFactory } from "../command/operationResponseCommand";
 import { SignAndSendTxRequestCommandFactory } from "../command/operationRequest/signAndSendTxRequestCommand";
 import { SignTxRequestCommandFactory } from "../command/operationRequest/signTxRequestCommand";
-import {
-  parseTransaction,
-  parseVersionedMessage,
-} from "../common/transactionUtils";
+import { parseVersionedMessage } from "../common/transactionUtils";
 
 export class SolibraWallet implements Solibra {
   #publicKey: PublicKey | null = null;
@@ -51,84 +46,71 @@ export class SolibraWallet implements Solibra {
   }): Promise<{ publicKey: PublicKey | null }> {
     console.log("SolibraWallet connect");
 
-    // sendMsgToContentScript(
-    //   ConnectRequestCommandFactory.buildNew({
-    //     from: CommandSource.INJECT_SCRIPT,
-    //   })
-    // );
-
-    // for (let i = 0; i < 10000; i++) {
-    //   if (!this.publicKey) {
-    //     await sleep(200);
-    //   } else {
-    //     break;
-    //   }
-    // }
-    // if (!this.publicKey) {
-    //   throw new Error("Connect wallet timeout.");
-    // }
-
-    // return { publicKey: this.publicKey };
-
     const operationRequestId = uuidv4();
     const encryptKeyPair = await generateKeyPair();
 
     const exportedPublicKey = await exportPublicKey(encryptKeyPair.publicKey);
 
-    this.startWaitOperation({ operationRequestId });
+    try {
+      this.startWaitOperation({ operationRequestId });
 
-    await sendMsgToContentScript(
-      ConnectRequestCommandFactory.buildNew({
-        from: CommandSource.INJECT_SCRIPT,
-        requestId: operationRequestId,
-        requestPublicKey: exportedPublicKey,
-        site: window.location.origin,
-      })
-    );
+      await sendMsgToContentScript(
+        ConnectRequestCommandFactory.buildNew({
+          from: CommandSource.INJECT_SCRIPT,
+          requestId: operationRequestId,
+          requestPublicKey: exportedPublicKey,
+          site: window.location.origin,
+        })
+      );
 
-    for (let i = 0; i < 1000; i++) {
+      for (let i = 0; i < 1000; i++) {
+        if (
+          this.#operationRequestId !== operationRequestId ||
+          this.#operationState === OperationStateType.PENDING
+        ) {
+          await sleep(200);
+          continue;
+        } else {
+          break;
+        }
+      }
+
       if (this.#operationRequestId !== operationRequestId) {
-        break;
+        throw new Error("operationRequestId not match.");
+      }
+
+      if (this.#operationState === OperationStateType.ERROR) {
+        throw new Error("operationState is ERROR.");
       }
 
       if (this.#operationState === OperationStateType.PENDING) {
-        await sleep(200);
-        continue;
-      } else {
-        break;
+        throw new Error("Connect wallet timeout.");
       }
-    }
 
-    if (this.#operationRequestId !== operationRequestId) {
-      throw new Error("operationRequestId not match.");
-    }
+      if (this.#operationResultEncryptedPayload === null) {
+        throw new Error("operationResultEncryptedPayload is null.");
+      }
 
-    if (this.#operationState === OperationStateType.ERROR) {
-      throw new Error("operationState is ERROR.");
-    }
+      const operationResultPayload =
+        await OperationResponseCommandFactory.defaultDecrypt(
+          this.#operationResultEncryptedPayload,
+          encryptKeyPair.privateKey
+        );
 
-    if (this.#operationState === OperationStateType.PENDING) {
-      throw new Error("Connect wallet timeout.");
-    }
+      if (!operationResultPayload || !operationResultPayload.publicKey) {
+        throw new Error("operationResultPayload corrupted.");
+      }
 
-    if (this.#operationResultEncryptedPayload === null) {
-      throw new Error("operationResultEncryptedPayload is null.");
-    }
-
-    const operationResultPayload =
-      await OperationResponseCommandFactory.defaultDecrypt(
-        this.#operationResultEncryptedPayload,
-        encryptKeyPair.privateKey
+      this.#publicKey = new PublicKey(
+        operationResultPayload.publicKey as string
       );
 
-    if (!operationResultPayload || !operationResultPayload.publicKey) {
-      throw new Error("operationResultPayload corrupted.");
+      return {
+        publicKey: operationResultPayload.publicKey,
+      };
+    } finally {
+      this.clearOperationContext();
     }
-
-    this.#publicKey = new PublicKey(operationResultPayload.publicKey as string);
-    return {
-      publicKey: operationResultPayload.publicKey,
-    };
   }
 
   async disconnect(): Promise<void> {
@@ -146,66 +128,69 @@ export class SolibraWallet implements Solibra {
 
     const exportedPublicKey = await exportPublicKey(encryptKeyPair.publicKey);
 
-    this.startWaitOperation({ operationRequestId });
+    try {
+      this.startWaitOperation({ operationRequestId });
 
-    await sendMsgToContentScript(
-      SignAndSendTxRequestCommandFactory.buildNew({
-        from: CommandSource.INJECT_SCRIPT,
-        encodedTransaction: bytesToHex(transaction.serialize()),
-        sendOptions: options,
-        requestId: operationRequestId,
-        requestPublicKey: exportedPublicKey,
-        site: window.location.origin,
-      })
-    );
+      await sendMsgToContentScript(
+        SignAndSendTxRequestCommandFactory.buildNew({
+          from: CommandSource.INJECT_SCRIPT,
+          encodedTransaction: bytesToHex(transaction.serialize()),
+          sendOptions: options,
+          requestId: operationRequestId,
+          requestPublicKey: exportedPublicKey,
+          site: window.location.origin,
+        })
+      );
 
-    for (let i = 0; i < 2000; i++) {
+      for (let i = 0; i < 2000; i++) {
+        if (
+          this.#operationRequestId !== operationRequestId ||
+          this.#operationState === OperationStateType.PENDING
+        ) {
+          await sleep(200);
+          continue;
+        } else {
+          break;
+        }
+      }
+
       if (this.#operationRequestId !== operationRequestId) {
-        break;
+        throw new Error("operationRequestId not match.");
+      }
+
+      if (this.#operationState === OperationStateType.ERROR) {
+        throw new Error("operationState is ERROR.");
       }
 
       if (this.#operationState === OperationStateType.PENDING) {
-        await sleep(200);
-        continue;
-      } else {
-        break;
+        throw new Error("operation timeout.");
       }
+
+      if (this.#operationResultEncryptedPayload === null) {
+        throw new Error("operationResultEncryptedPayload is null.");
+      }
+
+      const operationResultPayload =
+        await OperationResponseCommandFactory.defaultDecrypt(
+          this.#operationResultEncryptedPayload,
+          encryptKeyPair.privateKey
+        );
+
+      if (
+        !operationResultPayload ||
+        !operationResultPayload.signature ||
+        typeof operationResultPayload.signature !== "string"
+      ) {
+        throw new Error("operationResultPayload corrupted.");
+      }
+      const signature = operationResultPayload.signature;
+
+      return {
+        signature: signature,
+      };
+    } finally {
+      this.clearOperationContext();
     }
-
-    if (this.#operationRequestId !== operationRequestId) {
-      throw new Error("operationRequestId not match.");
-    }
-
-    if (this.#operationState === OperationStateType.ERROR) {
-      throw new Error("operationState is ERROR.");
-    }
-
-    if (this.#operationState === OperationStateType.PENDING) {
-      throw new Error("operation timeout.");
-    }
-
-    if (this.#operationResultEncryptedPayload === null) {
-      throw new Error("operationResultEncryptedPayload is null.");
-    }
-
-    const operationResultPayload =
-      await OperationResponseCommandFactory.defaultDecrypt(
-        this.#operationResultEncryptedPayload,
-        encryptKeyPair.privateKey
-      );
-
-    if (
-      !operationResultPayload ||
-      !operationResultPayload.signature ||
-      typeof operationResultPayload.signature !== "string"
-    ) {
-      throw new Error("operationResultPayload corrupted.");
-    }
-    const signature = operationResultPayload.signature;
-
-    return {
-      signature: signature,
-    };
   }
 
   async signTransaction<T extends Transaction | VersionedTransaction>(
@@ -217,72 +202,75 @@ export class SolibraWallet implements Solibra {
 
     const exportedPublicKey = await exportPublicKey(encryptKeyPair.publicKey);
 
-    this.startWaitOperation({ operationRequestId });
+    try {
+      this.startWaitOperation({ operationRequestId });
 
-    await sendMsgToContentScript(
-      SignTxRequestCommandFactory.buildNew({
-        from: CommandSource.INJECT_SCRIPT,
-        encodedTransaction: bytesToHex(transaction.serialize()),
-        requestId: operationRequestId,
-        requestPublicKey: exportedPublicKey,
-        site: window.location.origin,
-      })
-    );
+      await sendMsgToContentScript(
+        SignTxRequestCommandFactory.buildNew({
+          from: CommandSource.INJECT_SCRIPT,
+          encodedTransaction: bytesToHex(transaction.serialize()),
+          requestId: operationRequestId,
+          requestPublicKey: exportedPublicKey,
+          site: window.location.origin,
+        })
+      );
 
-    for (let i = 0; i < 2000; i++) {
+      for (let i = 0; i < 2000; i++) {
+        if (
+          this.#operationRequestId !== operationRequestId ||
+          this.#operationState === OperationStateType.PENDING
+        ) {
+          await sleep(200);
+          continue;
+        } else {
+          break;
+        }
+      }
+
       if (this.#operationRequestId !== operationRequestId) {
-        break;
+        throw new Error("operationRequestId not match.");
+      }
+
+      if (this.#operationState === OperationStateType.ERROR) {
+        throw new Error("operationState is ERROR.");
       }
 
       if (this.#operationState === OperationStateType.PENDING) {
-        await sleep(200);
-        continue;
-      } else {
-        break;
+        throw new Error("operation timeout.");
       }
-    }
 
-    if (this.#operationRequestId !== operationRequestId) {
-      throw new Error("operationRequestId not match.");
-    }
+      if (this.#operationResultEncryptedPayload === null) {
+        throw new Error("operationResultEncryptedPayload is null.");
+      }
 
-    if (this.#operationState === OperationStateType.ERROR) {
-      throw new Error("operationState is ERROR.");
-    }
+      const operationResultPayload =
+        await OperationResponseCommandFactory.defaultDecrypt(
+          this.#operationResultEncryptedPayload,
+          encryptKeyPair.privateKey
+        );
 
-    if (this.#operationState === OperationStateType.PENDING) {
-      throw new Error("operation timeout.");
-    }
+      if (
+        !operationResultPayload ||
+        !operationResultPayload.encodedSignedTransaction ||
+        typeof operationResultPayload.encodedSignedTransaction !== "string"
+      ) {
+        throw new Error("operationResultPayload corrupted.");
+      }
 
-    if (this.#operationResultEncryptedPayload === null) {
-      throw new Error("operationResultEncryptedPayload is null.");
-    }
-
-    const operationResultPayload =
-      await OperationResponseCommandFactory.defaultDecrypt(
-        this.#operationResultEncryptedPayload,
-        encryptKeyPair.privateKey
-      );
-
-    if (
-      !operationResultPayload ||
-      !operationResultPayload.encodedSignedTransaction ||
-      typeof operationResultPayload.encodedSignedTransaction !== "string"
-    ) {
-      throw new Error("operationResultPayload corrupted.");
-    }
-
-    try {
-      const signedTransaction = hexToBytes(
-        operationResultPayload.encodedSignedTransaction
-      );
       try {
-        return VersionedTransaction.deserialize(signedTransaction) as T;
+        const signedTransaction = hexToBytes(
+          operationResultPayload.encodedSignedTransaction
+        );
+        try {
+          return VersionedTransaction.deserialize(signedTransaction) as T;
+        } catch (e) {
+          return Transaction.from(signedTransaction) as T;
+        }
       } catch (e) {
-        return Transaction.from(signedTransaction) as T;
+        throw new Error("Cannot deserialize signed transaction.");
       }
-    } catch (e) {
-      throw new Error("Cannot deserialize signed transaction.");
+    } finally {
+      this.clearOperationContext();
     }
   }
 
@@ -311,65 +299,68 @@ export class SolibraWallet implements Solibra {
 
     const exportedPublicKey = await exportPublicKey(encryptKeyPair.publicKey);
 
-    this.startWaitOperation({ operationRequestId });
+    try {
+      this.startWaitOperation({ operationRequestId });
 
-    await sendMsgToContentScript(
-      SignMessageRequestCommandFactory.buildNew({
-        from: CommandSource.INJECT_SCRIPT,
-        signPayload: bytesToHex(message),
-        requestId: operationRequestId,
-        requestPublicKey: exportedPublicKey,
-        site: window.location.origin,
-      })
-    );
+      await sendMsgToContentScript(
+        SignMessageRequestCommandFactory.buildNew({
+          from: CommandSource.INJECT_SCRIPT,
+          signPayload: bytesToHex(message),
+          requestId: operationRequestId,
+          requestPublicKey: exportedPublicKey,
+          site: window.location.origin,
+        })
+      );
 
-    for (let i = 0; i < 2000; i++) {
+      for (let i = 0; i < 2000; i++) {
+        if (
+          this.#operationRequestId !== operationRequestId ||
+          this.#operationState === OperationStateType.PENDING
+        ) {
+          await sleep(200);
+          continue;
+        } else {
+          break;
+        }
+      }
+
       if (this.#operationRequestId !== operationRequestId) {
-        break;
+        throw new Error("operationRequestId not match.");
+      }
+
+      if (this.#operationState === OperationStateType.ERROR) {
+        throw new Error("operationState is ERROR.");
       }
 
       if (this.#operationState === OperationStateType.PENDING) {
-        await sleep(200);
-        continue;
-      } else {
-        break;
+        throw new Error("operation timeout.");
       }
+
+      if (this.#operationResultEncryptedPayload === null) {
+        throw new Error("operationResultEncryptedPayload is null.");
+      }
+
+      const operationResultPayload =
+        await OperationResponseCommandFactory.defaultDecrypt(
+          this.#operationResultEncryptedPayload,
+          encryptKeyPair.privateKey
+        );
+
+      if (
+        !operationResultPayload ||
+        !operationResultPayload.signature ||
+        typeof operationResultPayload.signature !== "string"
+      ) {
+        throw new Error("operationResultPayload corrupted.");
+      }
+      const signature = hexToBytes(operationResultPayload.signature);
+
+      return {
+        signature: signature,
+      };
+    } finally {
+      this.clearOperationContext();
     }
-
-    if (this.#operationRequestId !== operationRequestId) {
-      throw new Error("operationRequestId not match.");
-    }
-
-    if (this.#operationState === OperationStateType.ERROR) {
-      throw new Error("operationState is ERROR.");
-    }
-
-    if (this.#operationState === OperationStateType.PENDING) {
-      throw new Error("operation timeout.");
-    }
-
-    if (this.#operationResultEncryptedPayload === null) {
-      throw new Error("operationResultEncryptedPayload is null.");
-    }
-
-    const operationResultPayload =
-      await OperationResponseCommandFactory.defaultDecrypt(
-        this.#operationResultEncryptedPayload,
-        encryptKeyPair.privateKey
-      );
-
-    if (
-      !operationResultPayload ||
-      !operationResultPayload.signature ||
-      typeof operationResultPayload.signature !== "string"
-    ) {
-      throw new Error("operationResultPayload corrupted.");
-    }
-    const signature = hexToBytes(operationResultPayload.signature);
-
-    return {
-      signature: signature,
-    };
   }
 
   signIn(input?: SolanaSignInInput): Promise<SolanaSignInOutput> {
@@ -409,17 +400,25 @@ export class SolibraWallet implements Solibra {
     this.#operationResultEncryptedPayload = null;
   }
 
-  setOperationResult({
+  onOperationResult({
     requestId,
     operationState,
     resultEncryptedPayload,
   }: {
     requestId: string;
     operationState: OperationStateType;
-    resultEncryptedPayload: string;
+    resultEncryptedPayload: string | null;
   }) {
-    this.#operationRequestId = requestId;
+    if (this.#operationRequestId !== requestId) {
+      return;
+    }
     this.#operationState = operationState;
     this.#operationResultEncryptedPayload = resultEncryptedPayload;
+  }
+
+  clearOperationContext() {
+    this.#operationRequestId = null;
+    this.#operationState = OperationStateType.IDLE;
+    this.#operationResultEncryptedPayload = null;
   }
 }

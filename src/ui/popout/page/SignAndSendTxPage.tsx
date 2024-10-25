@@ -1,6 +1,8 @@
 import { useKeysStore } from "../../../store/keysStore.ts";
 import { restoreKeypair } from "../../../store/keyRecord.ts";
 import {
+  encryptOperationResultPayload,
+  OperationRecord,
   OperationStateType,
   useOperationStore,
 } from "../../../store/operationStore.ts";
@@ -13,7 +15,6 @@ import { CommandSource } from "../../../command/base/baseCommandType.ts";
 import { useEffect, useMemo, useState } from "react";
 import * as web3 from "@solana/web3.js";
 import {
-  clusterApiUrl,
   Transaction,
   TransactionSignature,
 } from "@solana/web3.js";
@@ -26,19 +27,19 @@ import {
 import { SimulateTransactionResultView } from "../../components/simulationResult/SimulateTransactionResultView.tsx";
 import { configConstants } from "../../../common/configConstants.ts";
 import { Divider, Stack, Button, Typography, Box } from "@mui/material";
-import { YSpace } from "../../components/common/YSpace.tsx";
+import { useSearchParams } from "react-router-dom";
 
 function SignAndSendTxPage() {
-  const operation = useOperationStore((state) => state.operation);
-  const operationState = useOperationStore((state) => state.state);
-  const operationPayload = useOperationStore((state) => state.requestPayload);
-  const operationRequestId = useOperationStore((state) => state.requestId);
-  const site = useOperationStore((state) => state.site);
-  const operationRequestPublicKey = useOperationStore(
-    (state) => state.requestPublicKey
-  );
+  const [searchParams, setSearchParams] = useSearchParams();
+  const operationRequestId = searchParams.get("requestId");
+  const getOperationRecord = useOperationStore((state) => state.getOperationRecord);
 
-  const clearOperation = useOperationStore((state) => state.clear);
+  const operationRecord :  OperationRecord | null = operationRequestId ? getOperationRecord(operationRequestId, Date.now()) : null;
+  const operationState = operationRecord?.state ?? null;
+  const operationPayload = operationRecord?.requestPayload ??null;
+  const site = operationRecord?.site ?? null;
+  const operationRequestPublicKey = operationRecord?.requestPublicKey ?? null;
+  const setOperationResult = useOperationStore((state) => state.setOperationResult);
 
   const lockKey = useKeysStore((state) => state.lockKey);
   const currentKey = useKeysStore((state) => state.currentKey);
@@ -65,7 +66,7 @@ function SignAndSendTxPage() {
     return (txPayload && parseTransaction(txPayload)) ?? null;
   }, [operationPayload]);
 
-  const sendOptions = operationPayload["sendOptions"] ?? undefined;
+  const sendOptions = operationPayload?.["sendOptions"] ?? undefined;
 
   // handle user reject
   const rejectHandle = async () => {
@@ -80,15 +81,18 @@ function SignAndSendTxPage() {
       operationRequestPublicKey
     );
 
-    clearOperation();
+    const encryptedResultPayload = await encryptOperationResultPayload(
+      { reason: "User rejected." },
+      operationRequestPublicKeyInstance
+    )
+    setOperationResult(operationRequestId, OperationStateType.ERROR, encryptedResultPayload, Date.now());
 
     const operationResponseCommand =
       await OperationResponseCommandFactory.buildNew({
         from: CommandSource.POPUP_SCRIPT,
         requestId: operationRequestId,
         state: OperationStateType.ERROR,
-        resultPayload: { reason: "User rejected." },
-        encryptKey: operationRequestPublicKeyInstance,
+        encryptedResultPayload
       });
 
     await sendMsgToContentScript(
@@ -147,7 +151,11 @@ function SignAndSendTxPage() {
       operationRequestPublicKey
     );
 
-    clearOperation();
+    const encryptedResultPayload = await encryptOperationResultPayload(
+      { signature: txHash },
+      operationRequestPublicKeyInstance
+    )
+    setOperationResult(operationRequestId, OperationStateType.COMPLETED, encryptedResultPayload, Date.now());
 
     try {
       const operationResponseCommand =
@@ -155,8 +163,7 @@ function SignAndSendTxPage() {
           from: CommandSource.POPUP_SCRIPT,
           requestId: operationRequestId,
           state: OperationStateType.COMPLETED,
-          resultPayload: { signature: txHash },
-          encryptKey: operationRequestPublicKeyInstance,
+          encryptedResultPayload
         });
 
       await sendMsgToContentScript(
@@ -180,7 +187,10 @@ function SignAndSendTxPage() {
       if (operationState !== OperationStateType.PENDING) {
         return;
       }
-      clearOperation();
+      
+      if (operationRequestId) {
+        setOperationResult(operationRequestId, OperationStateType.ERROR, null, Date.now());
+      }
 
       sendMsgToContentScript(
         ForwardToInjectScriptCommandFactory.buildNew({

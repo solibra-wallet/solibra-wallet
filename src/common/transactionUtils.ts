@@ -8,21 +8,13 @@ import {
   RpcResponseAndContext,
   SimulatedTransactionResponse,
   Transaction,
-  TransactionVersion,
   VersionedMessage,
   VersionedTransaction,
 } from "@solana/web3.js";
-import BigNumber from "bignumber.js";
-import {
-  base64Decode,
-  base64DecodeToRawBytes,
-  bytesToHex,
-} from "./encodingUtils";
+import { base64DecodeToRawBytes, bytesToHex } from "./encodingUtils";
 import {
   Account,
   getMint,
-  getTokenMetadata,
-  Mint,
   TOKEN_2022_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
   unpackAccount,

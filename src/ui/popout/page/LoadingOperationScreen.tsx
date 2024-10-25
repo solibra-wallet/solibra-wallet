@@ -1,10 +1,16 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { vanillaKeysStore } from "../../../store/keysStore";
-import { useOperationStore } from "../../../store/operationStore";
+import { OperationRecord, useOperationStore } from "../../../store/operationStore";
 
 function LoadingOperationScreen({ children }: { children: React.ReactNode }) {
-  const operation = useOperationStore((state) => state.operation);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const operationRequestId = searchParams.get("requestId");
+  const getOperationRecord = useOperationStore((state) => state.getOperationRecord);
+  const operationRecord :  OperationRecord | null = operationRequestId ? getOperationRecord(operationRequestId, Date.now()) : null;
+
+  const operation = operationRecord?.operation;
   const [loadTimer, setLoadTimer] = useState<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
 
@@ -37,13 +43,13 @@ function LoadingOperationScreen({ children }: { children: React.ReactNode }) {
   console.log("operation", operation);
   let currentPage = "/";
   if (operation === "connect") {
-    currentPage = "/connect";
+    currentPage = `/connect?requestId=${operationRequestId}`;
   } else if (operation === "signMessage") {
-    currentPage = "/signMessage";
+    currentPage = `/signMessage?requestId=${operationRequestId}`;
   } else if (operation === "signAndSendTx") {
-    currentPage = "/signAndSendTx";
+    currentPage = `/signAndSendTx?requestId=${operationRequestId}`;
   } else if (operation === "signTx") {
-    currentPage = "/signTx";
+    currentPage = `/signTx?requestId=${operationRequestId}`;
   }
 
   useEffect(() => {

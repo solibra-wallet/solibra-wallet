@@ -6,7 +6,10 @@ import { RefreshKeysStoreCommandFactory } from "../command/storeSync/refreshKeys
 import { SignMessageRequestCommandFactory } from "../command/operationRequest/signMessageRequestCommand";
 import { envStore } from "../store/envStore";
 import { vanillaKeysStore } from "../store/keysStore";
-import { operationStore } from "../store/operationStore";
+import {
+  buildDefaultOperationRecord,
+  operationStore,
+} from "../store/operationStore";
 import { sendMsgToContentScript } from "./messageUtils";
 import { SignAndSendTxRequestCommandFactory } from "../command/operationRequest/signAndSendTxRequestCommand";
 import { SignTxRequestCommandFactory } from "../command/operationRequest/signTxRequestCommand";
@@ -14,21 +17,16 @@ import { OperationRequestCommandType } from "../command/base/operationRequestCom
 import { configConstants } from "../common/configConstants";
 import { settingsStore } from "../store/settingsStore";
 import {
-  decryptMessage,
-  encryptMessage,
   exportPrivateKey,
   exportPublicKey,
   generateKeyPair,
-  importPrivateKey,
-  importPublicKey,
 } from "../common/asymEncryptionUtils";
-import { bytesToStr, strToBytes } from "../common/encodingUtils";
 
 envStore.getState().setEnv("BACKGROUND");
 
-function openPopout(top: number = 0, left: number = 0) {
+function openPopout(requestId: string, top: number = 0, left: number = 0) {
   chrome.windows.create({
-    url: "ui/popout/popout.html",
+    url: `ui/popout/popout.html#/?requestId=${requestId}`,
     type: "popup",
     top: top,
     left: left,
@@ -39,13 +37,16 @@ function openPopout(top: number = 0, left: number = 0) {
 
 async function placeOperation(command: OperationRequestCommandType) {
   await operationStore.persist.rehydrate();
-  operationStore.getState().setOperation({
-    operation: command.operation,
-    requestPayload: command.requestPayload,
-    requestId: command.requestId,
-    requestPublicKey: command.requestPublicKey,
-    site: command.site,
-  });
+  operationStore.getState().appendOperationRecord(
+    buildDefaultOperationRecord({
+      operation: command.operation,
+      requestPayload: command.requestPayload,
+      requestId: command.requestId,
+      requestPublicKey: command.requestPublicKey,
+      site: command.site,
+    }),
+    Date.now()
+  );
 }
 
 function registerMessageListeners() {
@@ -76,7 +77,7 @@ function registerMessageListeners() {
           return;
         }
         await placeOperation(command);
-        openPopout(request.top, request.left);
+        openPopout(command.requestId, request.top, request.left);
         sendResponse({});
         return;
       }
@@ -92,7 +93,7 @@ function registerMessageListeners() {
           return;
         }
         await placeOperation(command);
-        openPopout(request.top, request.left);
+        openPopout(command.requestId, request.top, request.left);
         sendResponse({});
         return;
       }
@@ -108,7 +109,7 @@ function registerMessageListeners() {
           return;
         }
         await placeOperation(command);
-        openPopout(request.top, request.left);
+        openPopout(command.requestId, request.top, request.left);
         sendResponse({});
         return;
       }
@@ -121,7 +122,7 @@ function registerMessageListeners() {
           return;
         }
         await placeOperation(command);
-        openPopout(request.top, request.left);
+        openPopout(command.requestId, request.top, request.left);
         sendResponse({});
         return;
       }

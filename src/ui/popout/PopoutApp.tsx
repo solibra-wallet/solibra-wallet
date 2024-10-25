@@ -1,4 +1,4 @@
-import { createMemoryRouter, RouterProvider } from "react-router-dom";
+import { createHashRouter, RouterProvider } from "react-router-dom";
 import ConnectPage from "./page/ConnectPage";
 import LoadingOperationScreen from "./page/LoadingOperationScreen";
 import SignAndSendTxPage from "./page/SignAndSendTxPage";
@@ -38,10 +38,7 @@ function PopoutApp() {
     },
   ];
 
-  const router = createMemoryRouter(routes, {
-    initialEntries: ["/"],
-    initialIndex: 0,
-  });
+  const router = createHashRouter(routes);
 
   return (
     <ThemeProvider theme={darkTheme}>

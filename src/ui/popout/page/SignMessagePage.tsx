@@ -1,6 +1,8 @@
 import { useKeysStore } from "../../../store/keysStore.ts";
 import { restoreKeypair } from "../../../store/keyRecord.ts";
 import {
+  encryptOperationResultPayload,
+  OperationRecord,
   OperationStateType,
   useOperationStore,
 } from "../../../store/operationStore.ts";
@@ -12,7 +14,6 @@ import { ForwardToInjectScriptCommandFactory } from "../../../command/transport/
 import { OperationResponseCommandFactory } from "../../../command/operationResponseCommand.ts";
 import { CommandSource } from "../../../command/base/baseCommandType.ts";
 import { useEffect } from "react";
-import { configConstants } from "../../../common/configConstants.ts";
 import {
   Divider,
   Stack,
@@ -22,19 +23,19 @@ import {
   Typography,
   Box,
 } from "@mui/material";
-import { YSpace } from "../../components/common/YSpace.tsx";
+import { useSearchParams } from "react-router-dom";
 
 function SignMessagePage() {
-  const operation = useOperationStore((state) => state.operation);
-  const operationState = useOperationStore((state) => state.state);
-  const operationPayload = useOperationStore((state) => state.requestPayload);
-  const operationRequestId = useOperationStore((state) => state.requestId);
-  const site = useOperationStore((state) => state.site);
-  const operationRequestPublicKey = useOperationStore(
-    (state) => state.requestPublicKey
-  );
+  const [searchParams, setSearchParams] = useSearchParams();
+  const operationRequestId = searchParams.get("requestId");
+  const getOperationRecord = useOperationStore((state) => state.getOperationRecord);
 
-  const clearOperation = useOperationStore((state) => state.clear);
+  const operationRecord :  OperationRecord | null = operationRequestId ? getOperationRecord(operationRequestId, Date.now()) : null;
+  const operationState = operationRecord?.state ?? null;
+  const operationPayload = operationRecord?.requestPayload ??null;
+  const site =   operationRecord?.site ?? null;
+  const operationRequestPublicKey = operationRecord?.requestPublicKey ?? null;
+  const setOperationResult = useOperationStore((state) => state.setOperationResult);
 
   const lockKey = useKeysStore((state) => state.lockKey);
   const currentKey = useKeysStore((state) => state.currentKey);
@@ -58,15 +59,18 @@ function SignMessagePage() {
       operationRequestPublicKey
     );
 
-    clearOperation();
+    const encryptedResultPayload = await encryptOperationResultPayload(
+      { reason: "User rejected." },
+      operationRequestPublicKeyInstance
+    )
+    setOperationResult(operationRequestId, OperationStateType.ERROR, encryptedResultPayload, Date.now());
 
     const operationResponseCommand =
       await OperationResponseCommandFactory.buildNew({
         from: CommandSource.POPUP_SCRIPT,
         requestId: operationRequestId,
         state: OperationStateType.ERROR,
-        resultPayload: { reason: "User rejected." },
-        encryptKey: operationRequestPublicKeyInstance,
+        encryptedResultPayload
       });
 
     await sendMsgToContentScript(
@@ -109,7 +113,12 @@ function SignMessagePage() {
       operationRequestPublicKey
     );
 
-    clearOperation();
+    const encryptedResultPayload = await encryptOperationResultPayload(
+      { signature },
+      operationRequestPublicKeyInstance
+    )
+    setOperationResult(operationRequestId, OperationStateType.ERROR, encryptedResultPayload, Date.now());
+
 
     try {
       const operationResponseCommand =
@@ -117,8 +126,7 @@ function SignMessagePage() {
           from: CommandSource.POPUP_SCRIPT,
           requestId: operationRequestId,
           state: OperationStateType.COMPLETED,
-          resultPayload: { signature },
-          encryptKey: operationRequestPublicKeyInstance,
+          encryptedResultPayload
         });
 
       await sendMsgToContentScript(
@@ -142,7 +150,10 @@ function SignMessagePage() {
       if (operationState !== OperationStateType.PENDING) {
         return;
       }
-      clearOperation();
+      
+      if (operationRequestId) {
+        setOperationResult(operationRequestId, OperationStateType.ERROR, null, Date.now());
+      }
 
       sendMsgToContentScript(
         ForwardToInjectScriptCommandFactory.buildNew({

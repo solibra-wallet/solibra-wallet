@@ -1,5 +1,5 @@
-import { decryptMessage, encryptMessage } from "../common/asymEncryptionUtils";
-import { bytesToStr, strToBytes } from "../common/encodingUtils";
+import { decryptMessage } from "../common/asymEncryptionUtils";
+import { bytesToStr } from "../common/encodingUtils";
 import { OperationStateType } from "../store/operationStore";
 import { BaseCommandType, CommandSource } from "./base/baseCommandType";
 
@@ -14,7 +14,7 @@ export type OperationResponseCommandType = BaseCommandType & {
   from: CommandSource;
   requestId: string;
   state: OperationStateType;
-  encryptedResultPayload: string;
+  encryptedResultPayload: string | null;
 };
 
 export class OperationResponseCommandFactory {
@@ -36,26 +36,13 @@ export class OperationResponseCommandFactory {
     from,
     requestId,
     state,
-    resultPayload,
-    encryptKey,
-    encryptionFunc,
+    encryptedResultPayload,
   }: {
     from: CommandSource;
     requestId: string;
     state: OperationStateType;
-    resultPayload: Record<string, any>;
-    encryptKey: CryptoKey;
-    encryptionFunc?: (
-      resultPayload: Record<string, any>,
-      encryptKey: CryptoKey
-    ) => Promise<string>;
+    encryptedResultPayload: string;
   }): Promise<OperationResponseCommandType> {
-    const encryptedResultPayload = encryptionFunc
-      ? await encryptionFunc(resultPayload, encryptKey)
-      : await encryptMessage(
-          encryptKey,
-          strToBytes(JSON.stringify(resultPayload))
-        );
     return { ...commandMeta, from, requestId, state, encryptedResultPayload };
   }
 
@@ -73,7 +60,7 @@ export class OperationResponseCommandFactory {
       from,
       requestId,
       state,
-      encryptedResultPayload: "",
+      encryptedResultPayload: null,
     };
   }
 
